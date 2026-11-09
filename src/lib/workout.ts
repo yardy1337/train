@@ -1,4 +1,4 @@
-import type { ProgramDay, SetEntry, Split, Workout, WorkoutExercise } from '../types';
+import type { ProgramDay, SetEntry, Workout, WorkoutExercise } from '../types';
 import { todayISO } from './date';
 
 export const normName = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
@@ -87,15 +87,4 @@ export function nextDayId(days: ProgramDay[], history: Workout[]): string | unde
   if (!last) return days[0].id;
   const idx = days.findIndex((d) => d.id === last.dayId);
   return days[(idx + 1) % days.length]?.id ?? days[0].id;
-}
-
-export const SPLITS: { id: Split; label: string }[] = [
-  { id: 'upper', label: 'Верх' },
-  { id: 'lower', label: 'Низ' },
-];
-
-/** Тип тренировки: из поля split, а для старых данных — по названию («Низ + пресс» → низ). */
-export function daySplit(day: Pick<ProgramDay, 'split' | 'title'>): Split {
-  if (day.split) return day.split;
-  return /^\s*низ|ноги/i.test(day.title) ? 'lower' : 'upper';
 }
