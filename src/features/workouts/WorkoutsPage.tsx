@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { Screen } from '../../components/motion';
+import { scrollToTop } from '../../lib/smoothScroll';
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
+import { EASE, Item, Screen, spring } from '../../components/motion';
 import { db } from '../../db/db';
-import { Button, Card, IconButton, PageHeader } from '../../components/ui';
+import { Button, Card, Empty, IconButton, PageHeader } from '../../components/ui';
+import { pluralRu } from '../../lib/format';
 import { History, Play, SlidersHorizontal } from 'lucide-react';
-import { createWorkout, formatTarget, nextDayId } from '../../lib/workout';
+import { createWorkout, daySplit, formatTarget, nextDayId, SPLITS } from '../../lib/workout';
 import { formatShort } from '../../lib/date';
-import type { ProgramDay, Workout } from '../../types';
+import type { ProgramDay, Split, Workout } from '../../types';
 import { useActiveWorkout, useHistory, useProgram } from './hooks';
 import { ActiveWorkout } from './ActiveWorkout';
 import { ProgramEditor } from './ProgramEditor';
@@ -28,7 +30,7 @@ export function WorkoutsPage() {
 
   return (
     <motion.div exit={{ opacity: 0, y: -6, transition: { duration: 0.14 } }}>
-      <AnimatePresence mode="wait">{content}</AnimatePresence>
+      <AnimatePresence mode="wait" onExitComplete={scrollToTop}>{content}</AnimatePresence>
     </motion.div>
   );
 }
@@ -47,6 +49,13 @@ function WorkoutsHome({
     await db.workouts.add(createWorkout(day, history));
   };
   const lastByDay = (id: string) => history.find((w) => w.dayId === id);
+  const nextSplit = daySplit(days.find((d) => d.id === nextId) ?? { title: '' });
+  // По умолчанию открыт тип следующей тренировки; пользователь может переключить.
+  const [picked, setPicked] = useState<Split | null>(null);
+  const split = picked ?? nextSplit;
+  const dir = split === 'upper' ? -1 : 1;
+  const setSplit = (s: Split) => setPicked(s);
+  const shown = days.filter((d) => daySplit(d) === split);
 
   return (
     <Screen>
@@ -64,12 +73,43 @@ function WorkoutsHome({
         }
       />
       <div className="space-y-3 px-4 pb-4">
-        <p className="eyebrow">Верх / низ · 4 дня в неделю</p>
-        {days.map((d, i) => {
+        <Item>
+          <LayoutGroup id="split">
+            <div className="grid grid-cols-2 gap-1 rounded-2xl border border-fg/[.06] bg-surface p-1.5 shadow-card">
+              {SPLITS.map((o) => {
+                const active = split === o.id;
+                const count = days.filter((d) => daySplit(d) === o.id).length;
+                return (
+                  <button
+                    key={o.id}
+                    onClick={() => setSplit(o.id)}
+                    className={`relative rounded-xl py-3 text-center transition-colors ${active ? 'text-white' : 'text-fg/55'}`}
+                  >
+                    {active && <motion.span layoutId="split-pill" className="absolute inset-0 rounded-xl bg-accent shadow-lift" transition={spring} />}
+                    <span className="relative block text-lg font-extrabold tracking-tight">{o.label}</span>
+                    <span className={`relative block text-[11px] font-bold ${active ? 'text-white/75' : 'text-fg/35'}`}>
+                      {count} {pluralRu(count, 'тренировка', 'тренировки', 'тренировок')}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </LayoutGroup>
+        </Item>
+        <AnimatePresence mode="popLayout" initial={false}>
+        {shown.map((d, i) => {
           const isNext = d.id === nextId;
           const last = lastByDay(d.id);
           return (
-            <Card key={d.id} index={i + 1} className={isNext ? 'border-accent/40 ring-4 ring-accent/10' : ''}>
+            <motion.div
+              key={d.id}
+              layout
+              initial={{ opacity: 0, x: dir * 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: dir * -40 }}
+              transition={{ duration: 0.32, ease: EASE }}
+            >
+            <Card index={i + 1} className={isNext ? 'border-accent/40 ring-4 ring-accent/10' : ''}>
               <div className="mb-2 flex items-start gap-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -100,8 +140,11 @@ function WorkoutsHome({
                 ))}
               </ul>
             </Card>
+            </motion.div>
           );
         })}
+        </AnimatePresence>
+        {!shown.length && <Empty>Пока нет тренировок этого типа — добавьте их в «Программе»</Empty>}
       </div>
     </Screen>
   );

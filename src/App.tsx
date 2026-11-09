@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
+import { scrollToTop } from './lib/smoothScroll';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { RestTimerProvider } from './components/RestTimer';
 import { WorkoutsPage } from './features/workouts/WorkoutsPage';
@@ -34,7 +35,7 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       <RestTimerProvider>
         <main className="mx-auto min-h-dvh max-w-lg overflow-x-clip pb-[calc(72px+env(safe-area-inset-bottom))]">
-          <AnimatePresence mode="wait" initial={false} onExitComplete={() => window.scrollTo(0, 0)}>
+          <AnimatePresence mode="wait" initial={false} onExitComplete={scrollToTop}>
             {tab === 'workouts' && <WorkoutsPage key="workouts" />}
             {tab === 'nutrition' && <NutritionPage key="nutrition" />}
             {tab === 'progress' && (

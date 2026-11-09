@@ -18,8 +18,12 @@ export interface ProgramDay {
   order: number;
   name: string; // «День A»
   title: string; // «Верх, сила»
+  /** Тип тренировки для переключателя «Верх / Низ» на главном экране. */
+  split?: Split;
   exercises: ProgramExercise[];
 }
+
+export type Split = 'upper' | 'lower';
 
 export interface SetEntry {
   weight: number | null;

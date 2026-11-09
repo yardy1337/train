@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { scrollToTop } from '../../lib/smoothScroll';
 import { AnimatePresence, motion } from 'motion/react';
 import { AnimatedNumber, EASE, Screen } from '../../components/motion';
 import { ChevronLeft, ChevronRight, History, Plus, Target } from 'lucide-react';
@@ -48,7 +49,7 @@ export function NutritionPage() {
 
   return (
     <motion.div exit={{ opacity: 0, y: -6, transition: { duration: 0.14 } }}>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" onExitComplete={scrollToTop}>
       {view === 'history' ? (
         <NutritionHistory
           key="history"

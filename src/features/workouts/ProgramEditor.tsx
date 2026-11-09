@@ -6,7 +6,7 @@ import { db } from '../../db/db';
 import { createDefaultProgram } from '../../data/defaultProgram';
 import { BackButton, Button, Card, Field, NumInput, PageHeader, Sheet, TextInput } from '../../components/ui';
 import { uid } from '../../lib/date';
-import { formatTarget } from '../../lib/workout';
+import { daySplit, formatTarget, SPLITS } from '../../lib/workout';
 import type { ProgramDay, ProgramExercise } from '../../types';
 import { useProgram } from './hooks';
 import { ExercisePicker } from './ExercisePicker';
@@ -58,6 +58,7 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
       order: (days[days.length - 1]?.order ?? -1) + 1,
       name: `День ${letter}`,
       title: 'Новый день',
+      split: daySplit(days[days.length - 1] ?? { title: 'низ' }) === 'upper' ? 'lower' : 'upper',
       exercises: [],
     });
   };
@@ -96,6 +97,22 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
               <button onClick={() => removeDay(day)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-red-600 active:bg-red-50" aria-label="Удалить день">
                 <Trash2 size={18} />
               </button>
+            </div>
+            <div className="mb-3 flex gap-1.5">
+              {SPLITS.map((o) => {
+                const active = daySplit(day) === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    onClick={() => saveDay({ ...day, split: o.id })}
+                    className={`flex-1 rounded-xl py-2 text-sm font-bold transition-colors ${
+                      active ? 'bg-accent text-white shadow-lift' : 'bg-fg/[.05] text-fg/55'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
             </div>
             <ul className="divide-y divide-fg/[.06]">
               {day.exercises.map((e, idx) => (

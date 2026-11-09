@@ -4,6 +4,9 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import { initDb } from './db/init';
 import './index.css';
+import { initSmoothScroll } from './lib/smoothScroll';
+
+initSmoothScroll();
 
 // Сервис-воркер: офлайн-работа и автообновление.
 registerSW({ immediate: true });

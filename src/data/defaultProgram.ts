@@ -15,7 +15,7 @@ function day(id: string, order: number, name: string, title: string, list: Ex[])
     rest,
     ...(note ? { note } : {}),
   }));
-  return { id, order, name, title, exercises };
+  return { id, order, name, title, split: /^низ/i.test(title) ? 'lower' : 'upper', exercises };
 }
 
 export function createDefaultProgram(): ProgramDay[] {

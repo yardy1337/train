@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, X } from 'lucide-react';
 import { parseNum } from '../lib/format';
 import { itemVariants, spring } from './motion';
+import { lockScroll } from '../lib/smoothScroll';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -166,12 +167,11 @@ export function Sheet({
 }) {
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = prev;
+      unlock();
       window.removeEventListener('keydown', onKey);
     };
   }, [open, onClose]);
@@ -179,6 +179,7 @@ export function Sheet({
     <AnimatePresence>
       {open && (
         <motion.div
+          data-lenis-prevent
           className="fixed inset-0 z-50 flex items-end justify-center bg-fg/35 backdrop-blur-[2px]"
           onClick={onClose}
           initial={{ opacity: 0 }}
@@ -205,7 +206,9 @@ export function Sheet({
                 <X size={18} strokeWidth={2.4} />
               </IconButton>
             </div>
-            <div className="flex-1 overflow-y-auto px-5 pb-5 pt-2">{children}</div>
+            <div data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-2">
+              {children}
+            </div>
           </motion.div>
         </motion.div>
       )}
