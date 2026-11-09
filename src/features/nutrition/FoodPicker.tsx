@@ -1,4 +1,6 @@
-import { Globe } from 'lucide-react';
+import { ChevronLeft, Globe, Plus, ScanBarcode } from 'lucide-react';
+import { motion } from 'motion/react';
+import { EASE } from '../../components/motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
@@ -40,12 +42,14 @@ export function FoodPicker({
   const [scanMsg, setScanMsg] = useState<string | null>(null);
   const [customOpen, setCustomOpen] = useState<{ food?: Food; barcode?: string } | null>(null);
   const [recipeOpen, setRecipeOpen] = useState<{ food?: Food } | null>(null);
+  const [cat, setCat] = useState<string | null>(null);
 
   const foods = useLiveQuery(() => db.foods.toArray(), [], EMPTY);
 
   useEffect(() => {
     if (!open) {
       setQ('');
+      setCat(null);
       setOnline({ status: 'idle', items: [] });
       setScanMsg(null);
     }
@@ -54,6 +58,15 @@ export function FoodPicker({
   useEffect(() => setOnline({ status: 'idle', items: [] }), [q]);
 
   const local = useMemo(() => searchFoods(foods, q), [foods, q]);
+  const categories = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const f of foods) if (f.source === 'builtin' && f.category) map.set(f.category, (map.get(f.category) ?? 0) + 1);
+    return [...map.entries()];
+  }, [foods]);
+  const inCategory = useMemo(
+    () => (cat ? foods.filter((f) => f.category === cat).sort((a, b) => a.name.localeCompare(b.name, 'ru')) : EMPTY),
+    [foods, cat],
+  );
   const onlineNew = useMemo(() => {
     const known = new Set(local.map((f) => f.id));
     return online.items.filter((f) => !known.has(f.id));
@@ -114,7 +127,8 @@ export function FoodPicker({
     [onPick],
   );
 
-  const list = tab === 'search' ? local : tab === 'fav' ? favorites : tab === 'recent' ? recent : mine;
+  const browsing = tab === 'search' && !q.trim();
+  const list = tab === 'search' ? (browsing ? inCategory : local) : tab === 'fav' ? favorites : tab === 'recent' ? recent : mine;
   const editHandler = (f: Food) =>
     f.source === 'recipe' ? setRecipeOpen({ food: f }) : setCustomOpen({ food: f });
 
@@ -133,9 +147,7 @@ export function FoodPicker({
               }}
             />
             <Button onClick={() => setScan(true)} aria-label="Сканировать штрихкод" className="px-3">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M13 8v8M17 8v8" />
-              </svg>
+              <ScanBarcode size={22} />
             </Button>
           </div>
           <Segmented<Tab>
@@ -153,16 +165,47 @@ export function FoodPicker({
           {tab === 'mine' && (
             <div className="flex gap-2">
               <Button className="flex-1" onClick={() => setCustomOpen({})}>
-                + Свой продукт
+                <Plus size={16} strokeWidth={2.6} /> Свой продукт
               </Button>
               {allowRecipes && (
                 <Button className="flex-1" onClick={() => setRecipeOpen({})}>
-                  + Рецепт
+                  <Plus size={16} strokeWidth={2.6} /> Рецепт
                 </Button>
               )}
             </div>
           )}
 
+          {browsing && !cat && (
+            <div className="space-y-2">
+              <div className="eyebrow">Категории · {foods.length} продуктов</div>
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map(([name, n], i) => (
+                  <motion.button
+                    key={name}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: Math.min(i * 0.015, 0.3), ease: EASE }}
+                    onClick={(e) => {
+                      e.currentTarget.closest('.overflow-y-auto')?.scrollTo({ top: 0 });
+                      setCat(name);
+                    }}
+                    className="rounded-2xl border border-fg/[.06] bg-surface px-3 py-3 text-left shadow-card transition-transform active:scale-[.97]"
+                  >
+                    <div className="text-sm font-bold leading-tight">{name}</div>
+                    <div className="mt-1 text-[11px] font-semibold text-fg/40">{n} шт.</div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
+          {browsing && cat && (
+            <button
+              onClick={() => setCat(null)}
+              className="inline-flex items-center gap-1 rounded-full bg-accent-soft py-1.5 pl-2 pr-3 text-sm font-bold text-accent-strong active:scale-95"
+            >
+              <ChevronLeft size={16} strokeWidth={2.6} /> {cat}
+            </button>
+          )}
           <ul className="divide-y divide-fg/[.06]">
             {list.map((f) => (
               <FoodRow
@@ -174,9 +217,6 @@ export function FoodPicker({
             ))}
           </ul>
 
-          {tab === 'search' && !q.trim() && (
-            <Empty>Начните вводить название. В базе {foods.length} продуктов.</Empty>
-          )}
           {tab === 'search' && q.trim() && !local.length && online.status === 'idle' && (
             <Empty>В локальной базе ничего не нашлось</Empty>
           )}

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Screen } from '../../components/motion';
 import { db } from '../../db/db';
 import { Button, Card, IconButton, PageHeader } from '../../components/ui';
 import { History, Play, SlidersHorizontal } from 'lucide-react';
 import { createWorkout, formatTarget, nextDayId } from '../../lib/workout';
 import { formatShort } from '../../lib/date';
-import type { ProgramDay } from '../../types';
+import type { ProgramDay, Workout } from '../../types';
 import { useActiveWorkout, useHistory, useProgram } from './hooks';
 import { ActiveWorkout } from './ActiveWorkout';
 import { ProgramEditor } from './ProgramEditor';
@@ -18,11 +20,28 @@ export function WorkoutsPage() {
   const history = useHistory();
   const active = useActiveWorkout();
 
-  if (view === 'editor') return <ProgramEditor onBack={() => setView('home')} />;
-  if (view === 'history') return <WorkoutHistory onBack={() => setView('home')} />;
-  if (active === undefined) return null;
-  if (active) return <ActiveWorkout key={active.id} initial={active} history={history} />;
+  let content: ReactNode = null;
+  if (view === 'editor') content = <ProgramEditor key="editor" onBack={() => setView('home')} />;
+  else if (view === 'history') content = <WorkoutHistory key="history" onBack={() => setView('home')} />;
+  else if (active) content = <ActiveWorkout key={`active-${active.id}`} initial={active} history={history} />;
+  else if (active === null) content = <WorkoutsHome key="home" days={days} history={history} setView={setView} />;
 
+  return (
+    <motion.div exit={{ opacity: 0, y: -6, transition: { duration: 0.14 } }}>
+      <AnimatePresence mode="wait">{content}</AnimatePresence>
+    </motion.div>
+  );
+}
+
+function WorkoutsHome({
+  days,
+  history,
+  setView,
+}: {
+  days: ProgramDay[];
+  history: Workout[];
+  setView: (v: View) => void;
+}) {
   const nextId = nextDayId(days, history);
   const start = async (day: ProgramDay) => {
     await db.workouts.add(createWorkout(day, history));
@@ -30,7 +49,7 @@ export function WorkoutsPage() {
   const lastByDay = (id: string) => history.find((w) => w.dayId === id);
 
   return (
-    <div>
+    <Screen>
       <PageHeader
         title="Тренировки"
         right={
@@ -46,11 +65,11 @@ export function WorkoutsPage() {
       />
       <div className="space-y-3 px-4 pb-4">
         <p className="eyebrow">Верх / низ · 4 дня в неделю</p>
-        {days.map((d) => {
+        {days.map((d, i) => {
           const isNext = d.id === nextId;
           const last = lastByDay(d.id);
           return (
-            <Card key={d.id} className={isNext ? 'border-accent/40 ring-4 ring-accent/10' : ''}>
+            <Card key={d.id} index={i + 1} className={isNext ? 'border-accent/40 ring-4 ring-accent/10' : ''}>
               <div className="mb-2 flex items-start gap-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -84,6 +103,6 @@ export function WorkoutsPage() {
           );
         })}
       </div>
-    </div>
+    </Screen>
   );
 }

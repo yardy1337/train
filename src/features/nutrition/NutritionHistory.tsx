@@ -1,3 +1,4 @@
+import { Screen } from '../../components/motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { useGoals } from '../../db/settings';
@@ -22,7 +23,7 @@ export function NutritionHistory({ onBack, onOpenDay }: { onBack: () => void; on
     : 0;
 
   return (
-    <div>
+    <Screen kind="push">
       <PageHeader title="История питания" left={<BackButton onClick={onBack} />} />
       <div className="space-y-2 px-4 pb-4">
         {days && days.length > 0 && (
@@ -54,6 +55,6 @@ export function NutritionHistory({ onBack, onOpenDay }: { onBack: () => void; on
           );
         })}
       </div>
-    </div>
+    </Screen>
   );
 }

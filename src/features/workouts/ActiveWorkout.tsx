@@ -1,3 +1,4 @@
+import { Screen } from '../../components/motion';
 import { Check, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../../db/db';
@@ -67,7 +68,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
   const doneCount = w.exercises.reduce((t, e) => t + e.sets.filter((s) => s.done).length, 0);
 
   return (
-    <div>
+    <Screen>
       <PageHeader
         title={`${w.dayName} · ${w.dayTitle}`}
         right={
@@ -94,7 +95,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           const increaseNow = last ? shouldIncrease({ ...last.exercise, repsMax: ex.repsMax, plannedSets: ex.plannedSets }) : false;
           const topReachedToday = shouldIncrease(ex);
           return (
-            <Card key={`${ex.exerciseId}-${i}`}>
+            <Card key={`${ex.exerciseId}-${i}`} index={i}>
               <div className="flex items-start gap-2">
                 <div className="flex-1">
                   <h3 className="text-base font-extrabold leading-tight">{ex.name}</h3>
@@ -198,6 +199,6 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           Завершить тренировку
         </Button>
       </div>
-    </div>
+    </Screen>
   );
 }

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { AnimatePresence, motion } from 'motion/react';
+import { AnimatedNumber, EASE, Screen } from '../../components/motion';
 import { ChevronLeft, ChevronRight, History, Plus, Target } from 'lucide-react';
 import { MEAL_ICONS } from '../../components/mealIcons';
 import { db } from '../../db/db';
@@ -28,17 +30,6 @@ export function NutritionPage() {
   const goals = useGoals();
   const entries = useLiveQuery(() => db.meals.where('date').equals(date).sortBy('createdAt'), [date], EMPTY);
 
-  if (view === 'history')
-    return (
-      <NutritionHistory
-        onBack={() => setView('day')}
-        onOpenDay={(d) => {
-          setDate(d);
-          setView('day');
-        }}
-      />
-    );
-
   const total = sum(entries);
 
   const add = async (grams: number, meal: MealType) => {
@@ -56,7 +47,19 @@ export function NutritionPage() {
   };
 
   return (
-    <div>
+    <motion.div exit={{ opacity: 0, y: -6, transition: { duration: 0.14 } }}>
+      <AnimatePresence mode="wait">
+      {view === 'history' ? (
+        <NutritionHistory
+          key="history"
+          onBack={() => setView('day')}
+          onOpenDay={(d) => {
+            setDate(d);
+            setView('day');
+          }}
+        />
+      ) : (
+      <Screen key="day">
       <PageHeader
         title="Питание"
         right={
@@ -75,20 +78,31 @@ export function NutritionPage() {
           <IconButton label="Предыдущий день" onClick={() => setDate(addDays(date, -1))}>
             <ChevronLeft size={20} strokeWidth={2.4} />
           </IconButton>
-          <button className="flex-1 text-center font-bold capitalize" onClick={() => setDate(todayISO())}>
-            {formatDay(date)}
+          <button className="relative h-9 flex-1 overflow-hidden text-center font-bold capitalize" onClick={() => setDate(todayISO())}>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={date}
+                className="absolute inset-0 grid place-items-center"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.22, ease: EASE }}
+              >
+                {formatDay(date)}
+              </motion.span>
+            </AnimatePresence>
           </button>
           <IconButton label="Следующий день" onClick={() => setDate(addDays(date, 1))}>
             <ChevronRight size={20} strokeWidth={2.4} />
           </IconButton>
         </div>
 
-        <Card className="space-y-4">
+        <Card index={1} className="space-y-4">
           <div className="flex items-end justify-between">
             <div>
               <div className="eyebrow">Съедено за день</div>
               <div className="mt-1 text-4xl font-extrabold tabular-nums tracking-tight">
-                {Math.round(total.kcal)}
+                <AnimatedNumber value={total.kcal} />
                 <span className="ml-1.5 text-base font-bold text-fg/40">/ {Math.round(goals.kcal)} ккал</span>
               </div>
             </div>
@@ -113,12 +127,12 @@ export function NutritionPage() {
           </div>
         </Card>
 
-        {MEALS.map((meal) => {
+        {MEALS.map((meal, mi) => {
           const items = entries.filter((e) => e.meal === meal.id);
           const t = sum(items);
           const Icon = MEAL_ICONS[meal.id];
           return (
-            <Card key={meal.id} className="p-0">
+            <Card key={meal.id} index={mi + 2} className="overflow-hidden p-0" layout>
               <div className="flex items-center gap-2 px-4 py-3">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-accent">
                   <Icon size={20} strokeWidth={2.2} />
@@ -139,10 +153,18 @@ export function NutritionPage() {
                   <Plus size={20} strokeWidth={2.6} />
                 </button>
               </div>
-              {items.length > 0 && (
-                <ul className="divide-y divide-fg/[.06] border-t border-fg/[.06]">
+              <ul className={items.length ? 'border-t border-fg/[.06]' : ''}>
+                <AnimatePresence initial={false}>
                   {items.map((e) => (
-                    <li key={e.id}>
+                    <motion.li
+                      key={e.id}
+                      layout
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: EASE }}
+                      className="overflow-hidden border-fg/[.06] [&:not(:first-child)]:border-t"
+                    >
                       <button className="flex w-full items-center gap-2 px-4 py-2 text-left active:bg-fg/[.04]" onClick={() => setEditing(e)}>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-semibold">{e.name}</div>
@@ -152,14 +174,17 @@ export function NutritionPage() {
                         </div>
                         <span className="text-sm font-bold tabular-nums">{Math.round(e.kcal)}</span>
                       </button>
-                    </li>
+                    </motion.li>
                   ))}
-                </ul>
-              )}
+                </AnimatePresence>
+              </ul>
             </Card>
           );
         })}
       </div>
+      </Screen>
+      )}
+      </AnimatePresence>
 
       <FoodPicker
         open={pickerMeal !== null}
@@ -192,6 +217,6 @@ export function NutritionPage() {
         }}
       />
       <GoalsSheet open={goalsOpen} goals={goals} onClose={() => setGoalsOpen(false)} />
-    </div>
+    </motion.div>
   );
 }

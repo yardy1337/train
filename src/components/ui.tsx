@@ -2,6 +2,7 @@ import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from '
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, X } from 'lucide-react';
 import { parseNum } from '../lib/format';
+import { itemVariants, spring } from './motion';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -45,11 +46,30 @@ export function IconButton({
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+  layout,
+  index = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  layout?: boolean;
+  /** Порядковый номер в списке — для появления «лесенкой». */
+  index?: number;
+}) {
   return (
-    <div className={`rounded-2xl border border-fg/[.06] bg-surface shadow-card ${/(^|\s)p-\d/.test(className) ? '' : 'p-4'} ${className}`}>
+    <motion.div
+      variants={itemVariants}
+      initial="hidden"
+      animate="show"
+      custom={index}
+      layout={layout}
+      transition={layout ? spring : undefined}
+      className={`rounded-2xl border border-fg/[.06] bg-surface shadow-card ${/(^|\s)p-\d/.test(className) ? '' : 'p-4'} ${className}`}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 

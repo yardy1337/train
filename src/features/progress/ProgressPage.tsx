@@ -1,3 +1,4 @@
+import { Screen } from '../../components/motion';
 import { X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -21,14 +22,14 @@ const tooltipStyle = {
 
 export function ProgressPage() {
   return (
-    <div>
+    <Screen>
       <PageHeader title="Прогресс" />
       <div className="space-y-3 px-4 pb-4">
         <BodyWeight />
         <ExerciseProgress />
         <Backup />
       </div>
-    </div>
+    </Screen>
   );
 }
 
@@ -53,7 +54,7 @@ function BodyWeight() {
   const list = [...entries].reverse();
 
   return (
-    <Card className="space-y-3">
+    <Card index={1} className="space-y-3">
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-extrabold tracking-tight">Вес тела</h2>
         {last && <span className="text-3xl font-extrabold tabular-nums tracking-tight">{fmt(last.weight)} кг</span>}
@@ -145,7 +146,7 @@ function ExerciseProgress() {
   const last = series[series.length - 1];
 
   return (
-    <Card className="space-y-3">
+    <Card index={2} className="space-y-3">
       <h2 className="text-lg font-extrabold tracking-tight">Рабочие веса</h2>
       {!names.length ? (
         <Empty>Заверши первую тренировку — здесь появятся графики по упражнениям</Empty>
@@ -218,7 +219,7 @@ function Backup() {
   };
 
   return (
-    <Card className="space-y-3">
+    <Card index={3} className="space-y-3">
       <h2 className="text-lg font-extrabold tracking-tight">Резервная копия</h2>
       <p className="text-xs text-fg/45">
         Все данные хранятся только на этом устройстве. Периодически сохраняй копию в JSON — её можно перенести на другой телефон.

@@ -4,7 +4,7 @@ import foodsJson from '../data/foods.json';
 import type { Food } from '../types';
 
 /** Увеличивайте, когда меняется встроенная база продуктов. */
-const FOODS_SEED_VERSION = 1;
+const FOODS_SEED_VERSION = 2;
 
 type Row = [name: string, kcal: number, protein: number, fat: number, carbs: number];
 
