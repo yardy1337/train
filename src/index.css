@@ -2,28 +2,34 @@
 @import "@fontsource-variable/manrope";
 
 /*
- * Бело-голубая тема. Все цвета интерфейса — через эти токены:
- * bg — фон страницы, surface — карточки и шторки, fg — основной текст
- * (оттенки текста и рамок делаем прозрачностью: text-fg/55, border-fg/10),
- * accent — фирменный синий.
+ * Палитра: тёмно-синий #0b1f4b, светлый #f2f2f2, золото #c9a227.
+ * bg — фон страницы, surface — карточки и шторки, fg — текст (оттенки — прозрачностью).
+ * accent — тёмно-синий: главные кнопки и активные элементы.
+ * gold — золото: акценты, на которые должен падать взгляд (индикаторы, метки,
+ * шкала калорий). Мелкий текст золотом на светлом фоне не пишем — плохо читается.
  */
 @theme {
   --font-sans: 'Manrope Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  --color-bg: #f3f7fd;
+  --color-bg: #f2f2f2;
   --color-surface: #ffffff;
-  --color-fg: #0c1d3d;
+  --color-fg: #0b1f4b;
 
-  --color-accent: #2563eb;
-  --color-accent-strong: #1d4ed8;
-  --color-accent-soft: #e8f0fe;
+  --color-accent: #0b1f4b;
+  --color-accent-strong: #06132f;
+  --color-accent-soft: #e6e9f1;
 
-  --color-protein: #2563eb;
-  --color-fat: #f59e0b;
-  --color-carbs: #38bdf8;
+  --color-gold: #c9a227;
+  --color-gold-strong: #a8861c;
+  --color-gold-soft: #f6eed6;
 
-  --shadow-card: 0 1px 2px rgb(12 29 61 / 0.04), 0 4px 16px -6px rgb(12 29 61 / 0.08);
-  --shadow-lift: 0 10px 30px -10px rgb(37 99 235 / 0.45);
+  --color-protein: #0b1f4b;
+  --color-fat: #c9a227;
+  --color-carbs: #8a9bc0;
+
+  --shadow-card: 0 1px 2px rgb(11 31 75 / 0.05), 0 4px 16px -6px rgb(11 31 75 / 0.1);
+  --shadow-lift: 0 10px 28px -10px rgb(11 31 75 / 0.5);
+  --shadow-gold: 0 8px 22px -8px rgb(201 162 39 / 0.6);
 }
 
 :root {
@@ -60,5 +66,17 @@ input[type='number']::-webkit-outer-spin-button {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: rgb(12 29 61 / 0.45);
+  color: rgb(11 31 75 / 0.45);
+}
+
+/* Страница под открытой шторкой не прокручивается (без скачка позиции). */
+html.scroll-locked,
+html.scroll-locked body {
+  overflow: hidden;
+}
+
+/* Длинные списки: браузер не рисует строки за пределами экрана. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
 }

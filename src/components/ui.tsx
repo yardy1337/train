@@ -76,7 +76,7 @@ export function Card({
 
 export function PageHeader({ title, left, right }: { title: string; left?: ReactNode; right?: ReactNode }) {
   return (
-    <header className="pt-safe sticky top-0 z-20 bg-bg/85 backdrop-blur-md">
+    <header className="pt-safe sticky top-0 z-20 bg-bg">
       <div className="flex h-16 items-center gap-1 px-4">
         {left}
         <h1 className="flex-1 truncate text-2xl font-extrabold tracking-tight">{title}</h1>
@@ -158,15 +158,22 @@ export function Sheet({
   title,
   children,
   full = false,
+  lazy = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   full?: boolean;
+  /** Рисовать содержимое только после того, как шторка выехала (для тяжёлых списков). */
+  lazy?: boolean;
 }) {
+  const [ready, setReady] = useState(!lazy);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setReady(!lazy);
+      return;
+    }
     const unlock = lockScroll();
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -174,18 +181,17 @@ export function Sheet({
       unlock();
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, lazy]);
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          data-lenis-prevent
-          className="fixed inset-0 z-50 flex items-end justify-center bg-fg/35 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-fg/40"
           onClick={onClose}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
+          transition={{ duration: 0.16 }}
         >
           <motion.div
             role="dialog"
@@ -194,8 +200,11 @@ export function Sheet({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className={`pb-safe flex w-full max-w-lg flex-col bg-surface shadow-2xl ${
+            // Плавный «выезд» без пружины: короче и не дёргается на слабых телефонах.
+            transition={{ duration: full ? 0.26 : 0.3, ease: [0.32, 0.72, 0, 1] }}
+            onAnimationComplete={() => setReady(true)}
+            style={{ willChange: 'transform' }}
+            className={`pb-safe flex w-full max-w-lg flex-col bg-surface shadow-xl ${
               full ? 'pt-safe h-full' : 'max-h-[90dvh] rounded-t-[28px]'
             }`}
           >
@@ -206,8 +215,17 @@ export function Sheet({
                 <X size={18} strokeWidth={2.4} />
               </IconButton>
             </div>
-            <div data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-2">
-              {children}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-2">
+              {ready ? (
+                children
+              ) : (
+                <div className="space-y-3 pt-1" aria-hidden>
+                  <div className="h-11 rounded-xl bg-fg/[.05]" />
+                  <div className="h-10 rounded-2xl bg-fg/[.04]" />
+                  <div className="h-16 rounded-2xl bg-fg/[.03]" />
+                  <div className="h-16 rounded-2xl bg-fg/[.03]" />
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

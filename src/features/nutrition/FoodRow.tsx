@@ -11,7 +11,7 @@ const badges: Partial<Record<Food['source'], string>> = {
 
 export function FoodRow({ food, onPick, onEdit }: { food: Food; onPick: (f: Food) => void; onEdit?: (f: Food) => void }) {
   return (
-    <li className="flex items-center gap-2 py-2">
+    <li className="cv-auto flex items-center gap-2 py-2">
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(food)}>
         <div className="truncate text-sm font-semibold">
           {food.name}
@@ -32,7 +32,7 @@ export function FoodRow({ food, onPick, onEdit }: { food: Food; onPick: (f: Food
         </button>
       )}
       <button
-        className={`grid h-9 w-9 place-items-center rounded-full active:bg-fg/[.06] ${food.favorite ? 'text-amber-500' : 'text-fg/25'}`}
+        className={`grid h-9 w-9 place-items-center rounded-full active:bg-fg/[.06] ${food.favorite ? 'text-gold' : 'text-fg/25'}`}
         onClick={() => toggleFavorite(food)}
         aria-label={food.favorite ? 'Убрать из избранного' : 'В избранное'}
       >

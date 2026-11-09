@@ -117,7 +117,7 @@ export function NutritionPage() {
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-fg/[.06]">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-400 to-accent transition-[width] duration-500"
+              className="h-full rounded-full bg-gradient-to-r from-gold to-gold-strong transition-[width] duration-500"
               style={{ width: `${Math.min(100, goals.kcal > 0 ? (total.kcal / goals.kcal) * 100 : 0)}%` }}
             />
           </div>
@@ -133,7 +133,7 @@ export function NutritionPage() {
           const t = sum(items);
           const Icon = MEAL_ICONS[meal.id];
           return (
-            <Card key={meal.id} index={mi + 2} className="overflow-hidden p-0" layout>
+            <Card key={meal.id} index={mi + 2} className="overflow-hidden p-0">
               <div className="flex items-center gap-2 px-4 py-3">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-accent">
                   <Icon size={20} strokeWidth={2.2} />
@@ -159,7 +159,6 @@ export function NutritionPage() {
                   {items.map((e) => (
                     <motion.li
                       key={e.id}
-                      layout
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}

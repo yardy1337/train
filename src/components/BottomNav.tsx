@@ -11,7 +11,7 @@ const items: { id: Tab; label: string; Icon: LucideIcon }[] = [
 
 export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-fg/[.06] bg-surface/90 backdrop-blur-md">
+    <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-fg/[.06] bg-surface">
       <div className="mx-auto flex max-w-lg px-2">
         {items.map(({ id, label, Icon }) => {
           const active = tab === id;
@@ -27,7 +27,7 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
               {active && (
                 <motion.span
                   layoutId="nav-indicator"
-                  className="absolute top-0 h-[3px] w-8 rounded-b-full bg-accent"
+                  className="absolute top-0 h-[3px] w-8 rounded-b-full bg-gold"
                   transition={{ type: 'spring', damping: 30, stiffness: 400 }}
                 />
               )}

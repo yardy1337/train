@@ -14,10 +14,10 @@ import { useHistory } from '../workouts/hooks';
 
 const EMPTY: WeightEntry[] = [];
 
-const axis = { stroke: 'rgb(12 29 61 / 0.4)', fontSize: 11, tickLine: false, axisLine: false } as const;
+const axis = { stroke: 'rgb(11 31 75 / 0.4)', fontSize: 11, tickLine: false, axisLine: false } as const;
 const tooltipStyle = {
-  contentStyle: { background: '#fff', border: '1px solid rgb(12 29 61 / 0.08)', borderRadius: 12, fontSize: 12, fontWeight: 600, boxShadow: '0 8px 24px -8px rgb(12 29 61 / 0.18)' },
-  labelStyle: { color: 'rgb(12 29 61 / 0.5)' },
+  contentStyle: { background: '#fff', border: '1px solid rgb(11 31 75 / 0.08)', borderRadius: 12, fontSize: 12, fontWeight: 600, boxShadow: '0 8px 24px -8px rgb(11 31 75 / 0.18)' },
+  labelStyle: { color: 'rgb(11 31 75 / 0.5)' },
 };
 
 export function ProgressPage() {
@@ -50,7 +50,7 @@ function BodyWeight() {
 
   const data = entries.map((e) => ({ date: formatShort(e.date), weight: e.weight }));
   const last = entries[entries.length - 1];
-  const toneClass = { good: 'bg-accent/10 text-accent', warn: 'bg-amber-500/10 text-amber-600', bad: 'bg-red-500/10 text-red-600' };
+  const toneClass = { good: 'bg-gold-soft text-accent', warn: 'bg-amber-500/10 text-amber-600', bad: 'bg-red-500/10 text-red-600' };
   const list = [...entries].reverse();
 
   return (
@@ -90,11 +90,11 @@ function BodyWeight() {
         <div className="h-48 -ml-3">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="rgb(12 29 61 / 0.06)" vertical={false} />
+              <CartesianGrid stroke="rgb(11 31 75 / 0.06)" vertical={false} />
               <XAxis dataKey="date" {...axis} minTickGap={16} />
               <YAxis {...axis} width={40} domain={['dataMin - 1', 'dataMax + 1']} tickFormatter={(v) => fmt(v, 1)} />
               <Tooltip {...tooltipStyle} formatter={(v) => [`${fmt(Number(v))} кг`, 'Вес']} />
-              <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3, fill: '#fff', stroke: '#2563eb', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+              <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke="#0b1f4b" strokeWidth={2.5} dot={{ r: 3, fill: '#fff', stroke: '#0b1f4b', strokeWidth: 2 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -187,11 +187,11 @@ function ExerciseProgress() {
           <div className="h-52 -ml-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="rgb(12 29 61 / 0.06)" vertical={false} />
+                <CartesianGrid stroke="rgb(11 31 75 / 0.06)" vertical={false} />
                 <XAxis dataKey="label" {...axis} minTickGap={16} />
                 <YAxis {...axis} width={40} domain={['auto', 'auto']} tickFormatter={(v) => fmt(v, 0)} />
                 <Tooltip {...tooltipStyle} formatter={(v) => [`${fmt(Number(v))} кг`, metric === 'weight' ? 'Вес' : '1ПМ']} />
-                <Line isAnimationActive={false} type="monotone" dataKey={metric} stroke="#0ea5e9" strokeWidth={2.5} dot={{ r: 3, fill: '#fff', stroke: '#0ea5e9', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                <Line isAnimationActive={false} type="monotone" dataKey={metric} stroke="#c9a227" strokeWidth={2.5} dot={{ r: 3, fill: '#fff', stroke: '#c9a227', strokeWidth: 2 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

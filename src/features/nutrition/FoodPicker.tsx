@@ -1,7 +1,5 @@
 import { ChevronLeft, Loader2, Plus, ScanBarcode } from 'lucide-react';
-import { motion } from 'motion/react';
-import { EASE } from '../../components/motion';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { Button, Empty, Segmented, Sheet, TextInput } from '../../components/ui';
@@ -41,7 +39,8 @@ export function FoodPicker({
   const [recipeOpen, setRecipeOpen] = useState<{ food?: Food } | null>(null);
   const [cat, setCat] = useState<string | null>(null);
 
-  const foods = useLiveQuery(() => db.foods.toArray(), [], EMPTY);
+  // База читается только когда окно открыто — закрытое окно ничего не грузит.
+  const foods = useLiveQuery(() => (open ? db.foods.toArray() : EMPTY), [open], EMPTY);
 
   useEffect(() => {
     if (!open) {
@@ -51,7 +50,9 @@ export function FoodPicker({
     }
   }, [open]);
 
-  const local = useMemo(() => searchFoods(foods, q), [foods, q]);
+  // Ввод не ждёт поиска: список обновляется в фоне, поле печатает без задержек.
+  const dq = useDeferredValue(q);
+  const local = useMemo(() => searchFoods(foods, dq), [foods, dq]);
 
   // Общая библиотека: ищем с задержкой после ввода, показываем то, чего нет в телефоне.
   const [cloud, setCloud] = useState<{ q: string; status: 'idle' | 'loading' | 'done' | 'error'; items: Food[] }>({
@@ -152,7 +153,7 @@ export function FoodPicker({
 
   return (
     <>
-      <Sheet open={open} onClose={onClose} title={title} full>
+      <Sheet open={open} onClose={onClose} title={title} full lazy>
         <div className="space-y-3">
           <div className="flex gap-2">
             <TextInput
@@ -197,12 +198,9 @@ export function FoodPicker({
             <div className="space-y-2">
               <div className="eyebrow">Категории · {foods.length} продуктов</div>
               <div className="grid grid-cols-2 gap-2">
-                {categories.map(([name, n], i) => (
-                  <motion.button
+                {categories.map(([name, n]) => (
+                  <button
                     key={name}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: Math.min(i * 0.015, 0.3), ease: EASE }}
                     onClick={(e) => {
                       e.currentTarget.closest('.overflow-y-auto')?.scrollTo({ top: 0 });
                       setCat(name);
@@ -211,7 +209,7 @@ export function FoodPicker({
                   >
                     <div className="text-sm font-bold leading-tight">{name}</div>
                     <div className="mt-1 text-[11px] font-semibold text-fg/40">{n} шт.</div>
-                  </motion.button>
+                  </button>
                 ))}
               </div>
             </div>

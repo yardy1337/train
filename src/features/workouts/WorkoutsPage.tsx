@@ -117,10 +117,10 @@ function CatalogHome({
       <div className="space-y-3 px-4 pb-6">
         <Item>
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-accent to-accent-strong p-5 text-white shadow-lift">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/[.06]" />
             <div className="pointer-events-none absolute -bottom-14 right-12 h-32 w-32 rounded-full bg-white/[.07]" />
             <button className="relative block w-full text-left" onClick={() => onOpen(mine.id)}>
-              <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/70">Моя программа</div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-gold">Моя программа</div>
               <div className="mt-1 flex items-center gap-1 text-3xl font-extrabold tracking-tight">
                 {mine.name}
                 <ChevronRight size={26} strokeWidth={2.6} className="opacity-70" />
@@ -128,7 +128,7 @@ function CatalogHome({
               <div className="mt-0.5 text-sm font-semibold text-white/75">{mine.tagline}</div>
             </button>
             {next && (
-              <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-white/12 p-3 backdrop-blur-sm">
+              <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-white/12 p-3">
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-white/65">Следующая</div>
                   <div className="truncate font-extrabold">
@@ -137,7 +137,7 @@ function CatalogHome({
                 </div>
                 <button
                   onClick={() => onStart(next)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-extrabold text-accent-strong transition-transform active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2.5 text-sm font-extrabold text-fg shadow-gold transition-transform active:scale-95"
                 >
                   <Play size={14} fill="currentColor" /> Начать
                 </button>
@@ -161,7 +161,7 @@ function CatalogHome({
                 <div className="flex items-center gap-2">
                   <span className="truncate text-lg font-extrabold tracking-tight">{p.name}</span>
                   {p.id === activeProgramId && (
-                    <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                    <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
                       моя
                     </span>
                   )}
@@ -267,13 +267,13 @@ function ProgramPage({
           const isNext = d.id === nextId;
           const last = isMine ? lastByDay(d.id) : undefined;
           return (
-            <Card key={d.id} index={i + 1} className={isNext ? 'border-accent/40 ring-4 ring-accent/10' : ''}>
+            <Card key={d.id} index={i + 1} className={isNext ? 'border-gold/60 ring-4 ring-gold/15' : ''}>
               <div className="flex items-start gap-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-extrabold tracking-tight">{d.name}</h2>
                     {isNext && (
-                      <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                      <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
                         следующая
                       </span>
                     )}

@@ -2,24 +2,20 @@ import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 
 /**
- * Плавная прокрутка страницы с инерцией (Lenis): после свайпа лента
- * продолжает ехать и мягко тормозит. Шторки и вложенные списки помечены
- * data-lenis-prevent и прокручиваются нативно.
+ * Прокрутка.
+ * На телефонах — нативная: у iOS/Android уже есть инерция, и она идёт в отдельном
+ * потоке на GPU, поэтому не подвисает. JS-прокрутку (Lenis) включаем только для
+ * колёсика мыши на компьютере — там нативная прокрутка рывками.
  */
 let lenis: Lenis | null = null;
 let locks = 0;
 
 export function initSmoothScroll() {
   if (lenis) return lenis;
-  lenis = new Lenis({
-    autoRaf: true,
-    lerp: 0.085,
-    smoothWheel: true,
-    syncTouch: true,
-    syncTouchLerp: 0.07,
-    touchInertiaExponent: 1.75,
-    respectReducedMotion: true,
-  });
+  const touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (touch || reduced) return null;
+  lenis = new Lenis({ autoRaf: true, lerp: 0.1, smoothWheel: true, syncTouch: false });
   return lenis;
 }
 
@@ -33,12 +29,11 @@ export function scrollToTop() {
 export function lockScroll() {
   locks++;
   lenis?.stop();
-  const prev = document.body.style.overflow;
-  document.body.style.overflow = 'hidden';
+  if (locks === 1) document.documentElement.classList.add('scroll-locked');
   return () => {
     locks = Math.max(0, locks - 1);
     if (locks === 0) {
-      document.body.style.overflow = prev === 'hidden' ? '' : prev;
+      document.documentElement.classList.remove('scroll-locked');
       lenis?.start();
     }
   };

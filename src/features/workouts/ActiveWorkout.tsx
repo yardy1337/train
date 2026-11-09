@@ -15,13 +15,32 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
   const first = useRef(true);
 
   // Автосохранение: тренировка переживёт закрытие приложения.
+  // Пишем в базу не на каждую цифру, а через 400 мс после последнего изменения.
+  const latest = useRef(w);
+  latest.current = w;
+  const closed = useRef(false); // тренировка завершена/отменена — больше ничего не пишем
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
-    db.workouts.put(w);
+    const t = setTimeout(() => {
+      if (!closed.current) db.workouts.put(w);
+    }, 400);
+    return () => clearTimeout(t);
   }, [w]);
+  // …и обязательно при уходе с экрана / сворачивании приложения.
+  useEffect(() => {
+    const flush = () => {
+      if (!closed.current) db.workouts.put(latest.current);
+    };
+    const onHide = () => document.visibilityState === 'hidden' && flush();
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      flush(); // ушли на другую вкладку — сохраняем последние цифры
+    };
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => tick((n) => n + 1), 30_000);
@@ -55,12 +74,14 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
     const anyDone = w.exercises.some((e) => e.sets.some((s) => s.done));
     if (!anyDone && !confirm('Ни один подход не отмечен. Всё равно завершить?')) return;
     timer.stop();
+    closed.current = true;
     await db.workouts.put({ ...w, status: 'done', finishedAt: Date.now() });
   };
 
   const cancel = async () => {
     if (!confirm('Отменить тренировку? Введённые данные будут удалены.')) return;
     timer.stop();
+    closed.current = true;
     if (w.id) await db.workouts.delete(w.id);
   };
 
@@ -87,7 +108,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           </button>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-fg/[.06]">
-          <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${(doneCount / Math.max(1, totalSets)) * 100}%` }} />
+          <div className="h-full rounded-full bg-gold transition-all duration-500" style={{ width: `${(doneCount / Math.max(1, totalSets)) * 100}%` }} />
         </div>
 
         {w.exercises.map((ex, i) => {
@@ -105,7 +126,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                   </div>
                 </div>
                 {increaseNow && (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent-strong">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gold-soft px-2.5 py-1 text-xs font-bold text-fg">
                     <TrendingUp size={14} strokeWidth={2.6} /> Увеличь вес
                   </span>
                 )}
