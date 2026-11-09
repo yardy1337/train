@@ -116,7 +116,7 @@ function CatalogHome({
       />
       <div className="space-y-3 px-4 pb-6">
         <Item>
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-accent to-accent-strong p-5 text-white shadow-lift">
+          <div className="relative overflow-hidden rounded-3xl border border-gold/25 bg-gradient-to-br from-[#1c3a7c] to-surface p-5 text-white shadow-card">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/[.06]" />
             <div className="pointer-events-none absolute -bottom-14 right-12 h-32 w-32 rounded-full bg-white/[.07]" />
             <button className="relative block w-full text-left" onClick={() => onOpen(mine.id)}>
@@ -137,7 +137,7 @@ function CatalogHome({
                 </div>
                 <button
                   onClick={() => onStart(next)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2.5 text-sm font-extrabold text-fg shadow-gold transition-transform active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2.5 text-sm font-extrabold text-bg shadow-gold transition-transform active:scale-95"
                 >
                   <Play size={14} fill="currentColor" /> Начать
                 </button>
@@ -161,7 +161,7 @@ function CatalogHome({
                 <div className="flex items-center gap-2">
                   <span className="truncate text-lg font-extrabold tracking-tight">{p.name}</span>
                   {p.id === activeProgramId && (
-                    <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
+                    <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-bg">
                       моя
                     </span>
                   )}
@@ -273,7 +273,7 @@ function ProgramPage({
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-extrabold tracking-tight">{d.name}</h2>
                     {isNext && (
-                      <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
+                      <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-bg">
                         следующая
                       </span>
                     )}

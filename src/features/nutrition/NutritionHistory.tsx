@@ -42,7 +42,7 @@ export function NutritionHistory({ onBack, onOpenDay }: { onBack: () => void; on
               <Card className="py-3">
                 <div className="flex items-baseline gap-2">
                   <span className="flex-1 font-medium">{formatDay(d.date)}</span>
-                  <span className={`text-sm tabular-nums ${pct >= 95 ? 'text-accent' : pct >= 80 ? 'text-fg/75' : 'text-amber-600'}`}>
+                  <span className={`text-sm tabular-nums ${pct >= 95 ? 'text-accent' : pct >= 80 ? 'text-fg/75' : 'text-amber-400'}`}>
                     {Math.round(d.kcal)} ккал · {pct}%
                   </span>
                 </div>

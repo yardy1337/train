@@ -109,7 +109,7 @@ export function NutritionPage() {
             </div>
             <div className="text-right text-xs font-bold tabular-nums text-fg/40">
               {total.kcal > goals.kcal ? (
-                <span className="text-amber-600">перебор {Math.round(total.kcal - goals.kcal)}</span>
+                <span className="text-amber-400">перебор {Math.round(total.kcal - goals.kcal)}</span>
               ) : (
                 <>осталось {Math.round(goals.kcal - total.kcal)}</>
               )}
@@ -148,7 +148,7 @@ export function NutritionPage() {
                 </div>
                 <button
                   onClick={() => setPickerMeal(meal.id)}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-accent text-white shadow-lift transition-transform active:scale-90"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-accent text-bg shadow-lift transition-transform active:scale-90"
                   aria-label={`Добавить в ${meal.label}`}
                 >
                   <Plus size={20} strokeWidth={2.6} />

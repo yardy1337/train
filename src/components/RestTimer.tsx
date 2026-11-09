@@ -111,7 +111,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
         <div className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] z-40 px-3">
           <div
             className={`relative mx-auto flex max-w-lg items-center gap-2 overflow-hidden rounded-2xl px-4 py-3 shadow-xl ${
-              finished ? 'bg-gold text-fg' : 'bg-fg text-white'
+              finished ? 'bg-gold text-bg' : 'border border-gold/30 bg-surface text-fg'
             }`}
             role="timer"
           >
@@ -135,7 +135,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
               </>
             )}
             {finished && (
-              <button onClick={stop} className="relative rounded-xl bg-fg px-4 py-2 text-sm font-bold text-white">
+              <button onClick={stop} className="relative rounded-xl bg-bg px-4 py-2 text-sm font-bold text-fg">
                 OK
               </button>
             )}

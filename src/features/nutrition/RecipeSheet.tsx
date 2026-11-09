@@ -72,7 +72,7 @@ export function RecipeSheet({ open, food, onClose }: { open: boolean; food?: Foo
                   />
                 </div>
                 <span className="text-xs text-fg/45">г</span>
-                <button className="grid h-8 w-8 place-items-center rounded-full text-red-600 active:bg-red-50" onClick={() => setItems(items.filter((_, j) => j !== idx))} aria-label="Убрать">
+                <button className="grid h-8 w-8 place-items-center rounded-full text-red-400 active:bg-red-500/15" onClick={() => setItems(items.filter((_, j) => j !== idx))} aria-label="Убрать">
                   <X size={16} strokeWidth={2.4} />
                 </button>
               </li>

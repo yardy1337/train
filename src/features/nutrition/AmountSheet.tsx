@@ -51,7 +51,7 @@ export function AmountSheet({
             <button
               key={g}
               onClick={() => setGrams(g)}
-              className={`rounded-lg px-3 py-1.5 text-sm ${grams === g ? 'bg-accent text-white' : 'bg-fg/[.05] text-fg/75'}`}
+              className={`rounded-lg px-3 py-1.5 text-sm ${grams === g ? 'bg-accent text-bg font-bold' : 'bg-fg/[.05] text-fg/75'}`}
             >
               {g}
             </button>
@@ -78,7 +78,7 @@ export function AmountSheet({
             <button
               key={x.id}
               onClick={() => setMeal(x.id)}
-              className={`rounded-full px-3 py-1.5 text-xs ${meal === x.id ? 'bg-fg text-white' : 'bg-fg/[.05] text-fg/55'}`}
+              className={`rounded-full px-3 py-1.5 text-xs ${meal === x.id ? 'bg-fg text-bg font-bold' : 'bg-fg/[.05] text-fg/55'}`}
             >
               {x.label}
             </button>

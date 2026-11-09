@@ -8,10 +8,10 @@ import { lockScroll } from '../lib/smoothScroll';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-accent text-white font-bold shadow-lift active:bg-accent-strong',
-  secondary: 'bg-accent-soft text-accent-strong font-semibold active:bg-accent/15',
+  primary: 'bg-accent text-bg font-extrabold shadow-lift active:bg-accent-strong',
+  secondary: 'bg-fg/10 text-fg font-semibold active:bg-fg/15',
   ghost: 'bg-transparent text-fg/70 font-semibold active:bg-fg/[.06]',
-  danger: 'bg-red-50 text-red-600 font-semibold active:bg-red-100',
+  danger: 'bg-red-500/15 text-red-400 font-semibold active:bg-red-500/150/25',
 };
 
 export function Button({
@@ -95,7 +95,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
 }
 
 const inputBase =
-  'w-full rounded-xl border border-fg/10 bg-surface text-base text-fg outline-none transition-colors placeholder:text-fg/35 focus:border-accent focus:ring-4 focus:ring-accent/15';
+  'w-full rounded-xl border border-fg/10 bg-bg/70 text-base text-fg outline-none transition-colors placeholder:text-fg/35 focus:border-accent focus:ring-4 focus:ring-accent/15';
 
 /**
  * Числовое поле: хранит текст локально, чтобы можно было набрать «22,» без потери ввода.
@@ -186,7 +186,7 @@ export function Sheet({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-fg/40"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
           onClick={onClose}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -267,7 +267,7 @@ export function ProgressBar({
           transition={{ type: 'spring', damping: 30, stiffness: 200 }}
         />
       </div>
-      <div className={`mt-1 text-right text-[11px] font-semibold tabular-nums ${over ? 'text-amber-600' : 'text-fg/40'}`}>
+      <div className={`mt-1 text-right text-[11px] font-semibold tabular-nums ${over ? 'text-amber-400' : 'text-fg/40'}`}>
         {over ? `перебор ${Math.round(-left)} ${unit}` : `осталось ${Math.round(left)} ${unit}`}
       </div>
     </div>
@@ -294,13 +294,13 @@ export function Segmented<T extends string>({
           key={o.id}
           onClick={() => onChange(o.id)}
           className={`relative flex-1 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-            value === o.id ? 'text-accent-strong' : 'text-fg/50'
+            value === o.id ? 'text-fg' : 'text-fg/50'
           }`}
         >
           {value === o.id && (
             <motion.span
               layoutId={`seg-${options.map((x) => x.id).join('-')}`}
-              className="absolute inset-0 rounded-xl bg-surface shadow-card"
+              className="absolute inset-0 rounded-xl bg-fg/[.12]"
               transition={{ type: 'spring', damping: 30, stiffness: 400 }}
             />
           )}

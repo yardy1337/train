@@ -103,7 +103,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           <span>
             {formatDuration(Date.now() - w.startedAt)} · подходов {doneCount}/{totalSets}
           </span>
-          <button onClick={cancel} className="font-semibold text-red-600">
+          <button onClick={cancel} className="font-semibold text-red-400">
             Отменить
           </button>
         </div>
@@ -177,7 +177,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                         onClick={() => toggleDone(i, si)}
                         aria-label={s.done ? 'Снять отметку' : 'Подход выполнен'}
                         className={`grid h-10 w-11 place-items-center rounded-xl transition-all active:scale-90 ${
-                          s.done ? 'bg-accent text-white shadow-lift' : 'border border-fg/10 bg-surface text-fg/30'
+                          s.done ? 'bg-accent text-bg shadow-lift' : 'border border-fg/10 bg-surface text-fg/30'
                         }`}
                       >
                         <Check size={20} strokeWidth={3} />
