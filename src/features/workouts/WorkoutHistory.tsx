@@ -27,24 +27,24 @@ export function WorkoutHistory({ onBack }: { onBack: () => void }) {
               <button className="w-full p-4 text-left" onClick={() => setOpen(isOpen ? null : w.id!)}>
                 <div className="flex items-baseline gap-2">
                   <span className="font-semibold">{w.dayName}</span>
-                  <span className="text-sm text-zinc-400">{w.dayTitle}</span>
+                  <span className="text-sm text-fg/55">{w.dayTitle}</span>
                   <span className="flex-1" />
-                  <span className="text-sm text-zinc-400">{formatDay(w.date)}</span>
+                  <span className="text-sm text-fg/55">{formatDay(w.date)}</span>
                 </div>
-                <div className="mt-1 text-xs text-zinc-500">
+                <div className="mt-1 text-xs text-fg/45">
                   {w.finishedAt ? formatDuration(w.finishedAt - w.startedAt) : ''} · {sets} подходов · тоннаж{' '}
                   {fmt(tonnage(w) / 1000, 2)} т
                 </div>
               </button>
               {isOpen && (
-                <div className="space-y-1.5 border-t border-white/5 px-4 py-3 text-sm">
+                <div className="space-y-1.5 border-t border-fg/[.06] px-4 py-3 text-sm">
                   {w.exercises.map((e, i) => (
                     <div key={i} className="flex gap-2">
-                      <span className="flex-1 text-zinc-300">{e.name}</span>
-                      <span className="text-right tabular-nums text-zinc-400">{formatSets(e.sets) || '—'}</span>
+                      <span className="flex-1 text-fg/75">{e.name}</span>
+                      <span className="text-right tabular-nums text-fg/55">{formatSets(e.sets) || '—'}</span>
                     </div>
                   ))}
-                  <button className="mt-2 text-xs text-red-400" onClick={() => remove(w.id)}>
+                  <button className="mt-2 text-xs text-red-600" onClick={() => remove(w.id)}>
                     Удалить тренировку
                   </button>
                 </div>

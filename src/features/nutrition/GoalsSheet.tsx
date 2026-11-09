@@ -33,7 +33,7 @@ export function GoalsSheet({ open, goals, onClose }: { open: boolean; goals: Goa
             <NumInput value={g.carbs} onChange={(v) => setG({ ...g, carbs: v ?? 0 })} />
           </Field>
         </div>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-fg/45">
           БЖУ дают {fromMacros} ккал.{' '}
           {Math.abs(fromMacros - g.kcal) > 50 && (
             <button className="text-accent underline" onClick={() => setG({ ...g, kcal: fromMacros })}>

@@ -108,32 +108,34 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{ start, stop }}>
       {children}
       {state && (
-        <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 px-3">
+        <div className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] z-40 px-3">
           <div
-            className={`mx-auto flex max-w-lg items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 shadow-2xl ring-1 ${
-              finished ? 'bg-accent-strong text-zinc-950 ring-accent' : 'bg-zinc-800 ring-white/10'
-            } relative`}
+            className={`relative mx-auto flex max-w-lg items-center gap-2 overflow-hidden rounded-2xl px-4 py-3 text-white shadow-2xl ${
+              finished ? 'bg-accent' : 'bg-fg'
+            }`}
             role="timer"
           >
             {!finished && (
-              <div className="absolute inset-y-0 left-0 bg-accent/15" style={{ width: `${pct}%` }} />
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+                <div className="h-full bg-accent transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
+              </div>
             )}
-            <div className="relative flex-1">
-              <div className="text-xs opacity-70">{finished ? 'Отдых окончен' : state.label}</div>
-              <div className="text-2xl font-bold tabular-nums">{finished ? 'Следующий подход!' : `${mm}:${ss}`}</div>
+            <div className="relative min-w-0 flex-1">
+              <div className="truncate text-[11px] font-bold uppercase tracking-wider opacity-60">{finished ? 'Отдых окончен' : state.label}</div>
+              <div className="text-2xl font-extrabold tabular-nums tracking-tight">{finished ? 'Следующий подход!' : `${mm}:${ss}`}</div>
             </div>
             {!finished && (
               <>
-                <button onClick={() => add(15)} className="relative rounded-lg bg-zinc-700 px-3 py-2 text-sm">
+                <button onClick={() => add(15)} className="relative rounded-xl bg-white/10 px-3 py-2 text-sm font-bold active:bg-white/20">
                   +15с
                 </button>
-                <button onClick={stop} className="relative rounded-lg bg-zinc-700 px-3 py-2 text-sm">
+                <button onClick={stop} className="relative rounded-xl bg-white/10 px-3 py-2 text-sm font-bold active:bg-white/20">
                   Пропустить
                 </button>
               </>
             )}
             {finished && (
-              <button onClick={stop} className="relative rounded-lg bg-zinc-950/20 px-3 py-2 text-sm font-semibold">
+              <button onClick={stop} className="relative rounded-xl bg-white px-4 py-2 text-sm font-bold text-accent-strong">
                 OK
               </button>
             )}

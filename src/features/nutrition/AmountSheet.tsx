@@ -44,14 +44,14 @@ export function AmountSheet({
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <NumInput value={grams} onChange={setGrams} className="py-3 text-2xl font-bold" ariaLabel="Граммы" />
-          <span className="text-lg text-zinc-400">г</span>
+          <span className="text-lg text-fg/55">г</span>
         </div>
         <div className="flex flex-wrap gap-2">
           {QUICK.map((g) => (
             <button
               key={g}
               onClick={() => setGrams(g)}
-              className={`rounded-lg px-3 py-1.5 text-sm ${grams === g ? 'bg-accent text-zinc-950' : 'bg-zinc-800 text-zinc-300'}`}
+              className={`rounded-lg px-3 py-1.5 text-sm ${grams === g ? 'bg-accent text-white' : 'bg-fg/[.05] text-fg/75'}`}
             >
               {g}
             </button>
@@ -59,18 +59,18 @@ export function AmountSheet({
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
           {[
-            { l: 'Ккал', v: Math.round(m.kcal), c: 'text-accent' },
+            { l: 'Ккал', v: Math.round(m.kcal), c: 'text-fg' },
             { l: 'Белки', v: fmt(m.protein), c: 'text-protein' },
             { l: 'Жиры', v: fmt(m.fat), c: 'text-fat' },
             { l: 'Углев.', v: fmt(m.carbs), c: 'text-carbs' },
           ].map((x) => (
-            <div key={x.l} className="rounded-xl bg-zinc-800/60 py-2">
-              <div className={`text-lg font-bold tabular-nums ${x.c}`}>{x.v}</div>
-              <div className="text-xs text-zinc-500">{x.l}</div>
+            <div key={x.l} className="rounded-xl bg-fg/[.04] py-2">
+              <div className={`text-lg font-extrabold tabular-nums ${x.c}`}>{x.v}</div>
+              <div className="text-[11px] font-semibold text-fg/45">{x.l}</div>
             </div>
           ))}
         </div>
-        <div className="text-xs text-zinc-500">
+        <div className="text-xs text-fg/45">
           На 100 г: {Math.round(per100.kcal)} ккал · Б {fmt(per100.protein)} · Ж {fmt(per100.fat)} · У {fmt(per100.carbs)}
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -78,9 +78,9 @@ export function AmountSheet({
             <button
               key={x.id}
               onClick={() => setMeal(x.id)}
-              className={`rounded-full px-3 py-1.5 text-xs ${meal === x.id ? 'bg-zinc-100 text-zinc-950' : 'bg-zinc-800 text-zinc-400'}`}
+              className={`rounded-full px-3 py-1.5 text-xs ${meal === x.id ? 'bg-fg text-white' : 'bg-fg/[.05] text-fg/55'}`}
             >
-              {x.icon} {x.label}
+              {x.label}
             </button>
           ))}
         </div>

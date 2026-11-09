@@ -75,7 +75,7 @@ export function CustomFoodSheet({
             <TextInput inputMode="numeric" value={d.barcode} onChange={(e) => setD({ ...d, barcode: e.target.value.replace(/\D/g, '') })} />
           </Field>
         </div>
-        <p className="text-xs text-zinc-400">Пищевая ценность на 100 г (смотрите на упаковке):</p>
+        <p className="text-xs text-fg/55">Пищевая ценность на 100 г (смотрите на упаковке):</p>
         <div className="grid grid-cols-4 gap-2">
           <Field label="Ккал">
             <NumInput value={d.kcal} placeholder={String(autoKcal)} onChange={(v) => setD({ ...d, kcal: v })} />
@@ -90,7 +90,7 @@ export function CustomFoodSheet({
             <NumInput value={d.carbs} placeholder="0" onChange={(v) => setD({ ...d, carbs: v })} />
           </Field>
         </div>
-        <p className="text-xs text-zinc-500">Если не указать калории, они посчитаются из БЖУ (4/9/4).</p>
+        <p className="text-xs text-fg/45">Если не указать калории, они посчитаются из БЖУ (4/9/4).</p>
         <Button variant="primary" className="w-full py-3" disabled={!d.name.trim()} onClick={save}>
           Сохранить
         </Button>

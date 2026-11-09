@@ -27,9 +27,9 @@ export function NutritionHistory({ onBack, onOpenDay }: { onBack: () => void; on
       <div className="space-y-2 px-4 pb-4">
         {days && days.length > 0 && (
           <Card>
-            <div className="text-sm text-zinc-400">Среднее за последние {Math.min(7, days.length)} дн. с записями</div>
+            <div className="text-sm text-fg/55">Среднее за последние {Math.min(7, days.length)} дн. с записями</div>
             <div className="text-2xl font-bold tabular-nums">
-              {Math.round(avg)} <span className="text-base font-normal text-zinc-500">/ {goals.kcal} ккал</span>
+              {Math.round(avg)} <span className="text-base font-normal text-fg/45">/ {goals.kcal} ккал</span>
             </div>
           </Card>
         )}
@@ -41,11 +41,11 @@ export function NutritionHistory({ onBack, onOpenDay }: { onBack: () => void; on
               <Card className="py-3">
                 <div className="flex items-baseline gap-2">
                   <span className="flex-1 font-medium">{formatDay(d.date)}</span>
-                  <span className={`text-sm tabular-nums ${pct >= 95 ? 'text-accent' : pct >= 80 ? 'text-zinc-300' : 'text-amber-400'}`}>
+                  <span className={`text-sm tabular-nums ${pct >= 95 ? 'text-accent' : pct >= 80 ? 'text-fg/75' : 'text-amber-600'}`}>
                     {Math.round(d.kcal)} ккал · {pct}%
                   </span>
                 </div>
-                <div className="mt-1 text-xs tabular-nums text-zinc-500">
+                <div className="mt-1 text-xs tabular-nums text-fg/45">
                   Б {Math.round(d.protein)} / {goals.protein} · Ж {Math.round(d.fat)} / {goals.fat} · У {Math.round(d.carbs)} /{' '}
                   {goals.carbs} · {d.count} зап.
                 </div>

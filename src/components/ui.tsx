@@ -1,13 +1,15 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { ChevronLeft, X } from 'lucide-react';
 import { parseNum } from '../lib/format';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-accent-strong text-zinc-950 active:bg-accent font-semibold',
-  secondary: 'bg-zinc-800 text-zinc-100 active:bg-zinc-700',
-  ghost: 'bg-transparent text-zinc-300 active:bg-zinc-800',
-  danger: 'bg-red-500/15 text-red-400 active:bg-red-500/25',
+  primary: 'bg-accent text-white font-bold shadow-lift active:bg-accent-strong',
+  secondary: 'bg-accent-soft text-accent-strong font-semibold active:bg-accent/15',
+  ghost: 'bg-transparent text-fg/70 font-semibold active:bg-fg/[.06]',
+  danger: 'bg-red-50 text-red-600 font-semibold active:bg-red-100',
 };
 
 export function Button({
@@ -19,21 +21,44 @@ export function Button({
     <button
       type="button"
       {...props}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm transition-colors disabled:opacity-40 ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm transition-[background-color,transform] duration-150 active:scale-[.97] disabled:pointer-events-none disabled:opacity-40 ${variants[variant]} ${className}`}
     />
   );
 }
 
+/** Круглая кнопка-иконка (назад, закрыть, добавить и т. п.). */
+export function IconButton({
+  label,
+  className = '',
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      {...props}
+      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-fg/60 transition-colors active:bg-fg/[.06] ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl bg-zinc-900 p-4 ring-1 ring-white/5 ${className}`}>{children}</div>;
+  return (
+    <div className={`rounded-2xl border border-fg/[.06] bg-surface shadow-card ${/(^|\s)p-\d/.test(className) ? '' : 'p-4'} ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 export function PageHeader({ title, left, right }: { title: string; left?: ReactNode; right?: ReactNode }) {
   return (
-    <header className="pt-safe sticky top-0 z-20 bg-zinc-950/90 backdrop-blur">
-      <div className="flex h-14 items-center gap-2 px-4">
+    <header className="pt-safe sticky top-0 z-20 bg-bg/85 backdrop-blur-md">
+      <div className="flex h-16 items-center gap-1 px-4">
         {left}
-        <h1 className="flex-1 truncate text-lg font-bold">{title}</h1>
+        <h1 className="flex-1 truncate text-2xl font-extrabold tracking-tight">{title}</h1>
         {right}
       </div>
     </header>
@@ -42,13 +67,14 @@ export function PageHeader({ title, left, right }: { title: string; left?: React
 
 export function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="-ml-2 rounded-lg p-2 text-zinc-300 active:bg-zinc-800" aria-label="Назад">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-    </button>
+    <IconButton label="Назад" onClick={onClick} className="-ml-2 text-fg">
+      <ChevronLeft size={24} strokeWidth={2.4} />
+    </IconButton>
   );
 }
+
+const inputBase =
+  'w-full rounded-xl border border-fg/10 bg-surface text-base text-fg outline-none transition-colors placeholder:text-fg/35 focus:border-accent focus:ring-4 focus:ring-accent/15';
 
 /**
  * Числовое поле: хранит текст локально, чтобы можно было набрать «22,» без потери ввода.
@@ -86,24 +112,19 @@ export function NumInput({
         setText(t);
         onChange(parseNum(t));
       }}
-      className={`w-full rounded-lg bg-zinc-800 px-2 py-2 text-center text-base text-zinc-100 outline-none placeholder:text-zinc-500 focus:ring-2 focus:ring-accent ${className}`}
+      className={`${inputBase} px-2 py-2 text-center font-semibold tabular-nums ${className}`}
     />
   );
 }
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={`w-full rounded-xl bg-zinc-800 px-3 py-2.5 text-base text-zinc-100 outline-none placeholder:text-zinc-500 focus:ring-2 focus:ring-accent ${props.className ?? ''}`}
-    />
-  );
+  return <input {...props} className={`${inputBase} px-3.5 py-2.5 ${props.className ?? ''}`} />;
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs text-zinc-400">{label}</span>
+      <span className="eyebrow mb-1.5 block">{label}</span>
       {children}
     </label>
   );
@@ -134,28 +155,41 @@ export function Sheet({
       window.removeEventListener('keydown', onKey);
     };
   }, [open, onClose]);
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-label={title}
-        onClick={(e) => e.stopPropagation()}
-        className={`pb-safe flex w-full max-w-lg flex-col bg-zinc-900 ring-1 ring-white/10 ${
-          full ? 'pt-safe h-full' : 'max-h-[90dvh] rounded-t-3xl'
-        }`}
-      >
-        <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
-          <h2 className="flex-1 truncate text-base font-semibold">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-zinc-400 active:bg-zinc-800" aria-label="Закрыть">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">{children}</div>
-      </div>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-fg/35 backdrop-blur-[2px]"
+          onClick={onClose}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+        >
+          <motion.div
+            role="dialog"
+            aria-label={title}
+            onClick={(e) => e.stopPropagation()}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 32, stiffness: 340 }}
+            className={`pb-safe flex w-full max-w-lg flex-col bg-surface shadow-2xl ${
+              full ? 'pt-safe h-full' : 'max-h-[90dvh] rounded-t-[28px]'
+            }`}
+          >
+            {!full && <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-fg/10" />}
+            <div className="flex items-center gap-2 px-5 pb-2 pt-3">
+              <h2 className="flex-1 truncate text-lg font-extrabold tracking-tight">{title}</h2>
+              <IconButton label="Закрыть" onClick={onClose} className="-mr-2 bg-fg/[.05]">
+                <X size={18} strokeWidth={2.4} />
+              </IconButton>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 pb-5 pt-2">{children}</div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -177,16 +211,22 @@ export function ProgressBar({
   const over = left < 0;
   return (
     <div>
-      <div className="mb-1 flex items-baseline justify-between text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="tabular-nums text-zinc-300">
-          {Math.round(value)} <span className="text-zinc-500">/ {Math.round(goal)} {unit}</span>
+      <div className="mb-1.5 flex items-baseline justify-between text-sm">
+        <span className="font-bold">{label}</span>
+        <span className="tabular-nums font-bold">
+          {Math.round(value)} <span className="font-medium text-fg/40">/ {Math.round(goal)} {unit}</span>
         </span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-zinc-800">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      <div className="h-2 overflow-hidden rounded-full bg-fg/[.06]">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: color }}
+          initial={false}
+          animate={{ width: `${pct}%` }}
+          transition={{ type: 'spring', damping: 30, stiffness: 200 }}
+        />
       </div>
-      <div className={`mt-0.5 text-right text-xs ${over ? 'text-amber-400' : 'text-zinc-500'}`}>
+      <div className={`mt-1 text-right text-[11px] font-semibold tabular-nums ${over ? 'text-amber-600' : 'text-fg/40'}`}>
         {over ? `перебор ${Math.round(-left)} ${unit}` : `осталось ${Math.round(left)} ${unit}`}
       </div>
     </div>
@@ -194,7 +234,7 @@ export function ProgressBar({
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-8 text-center text-sm text-zinc-500">{children}</p>;
+  return <p className="py-10 text-center text-sm font-medium text-fg/40">{children}</p>;
 }
 
 export function Segmented<T extends string>({
@@ -207,16 +247,23 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex gap-1 overflow-x-auto rounded-xl bg-zinc-800/70 p-1">
+    <div className="flex gap-1 overflow-x-auto rounded-2xl bg-fg/[.05] p-1">
       {options.map((o) => (
         <button
           key={o.id}
           onClick={() => onChange(o.id)}
-          className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
-            value === o.id ? 'bg-zinc-950 font-semibold text-accent' : 'text-zinc-400'
+          className={`relative flex-1 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+            value === o.id ? 'text-accent-strong' : 'text-fg/50'
           }`}
         >
-          {o.label}
+          {value === o.id && (
+            <motion.span
+              layoutId={`seg-${options.map((x) => x.id).join('-')}`}
+              className="absolute inset-0 rounded-xl bg-surface shadow-card"
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+            />
+          )}
+          <span className="relative">{o.label}</span>
         </button>
       ))}
     </div>

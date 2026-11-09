@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
@@ -147,7 +148,7 @@ export function FoodPicker({
               { id: 'mine', label: 'Мои' },
             ]}
           />
-          {scanMsg && <p className="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-300">{scanMsg}</p>}
+          {scanMsg && <p className="rounded-lg bg-fg/[.05] px-3 py-2 text-sm text-fg/75">{scanMsg}</p>}
 
           {tab === 'mine' && (
             <div className="flex gap-2">
@@ -162,7 +163,7 @@ export function FoodPicker({
             </div>
           )}
 
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-fg/[.06]">
             {list.map((f) => (
               <FoodRow
                 key={f.id}
@@ -179,25 +180,25 @@ export function FoodPicker({
           {tab === 'search' && q.trim() && !local.length && online.status === 'idle' && (
             <Empty>В локальной базе ничего не нашлось</Empty>
           )}
-          {tab === 'fav' && !favorites.length && <Empty>Нажмите ★ у продукта, чтобы добавить его сюда</Empty>}
+          {tab === 'fav' && !favorites.length && <Empty>Нажмите звёздочку у продукта, чтобы добавить его сюда</Empty>}
           {tab === 'recent' && !recent.length && <Empty>Здесь появятся продукты, которые вы добавляли</Empty>}
           {tab === 'mine' && !mine.length && <Empty>Свои продукты и рецепты появятся здесь</Empty>}
 
           {tab === 'search' && q.trim().length >= 2 && (
-            <div className="space-y-2 border-t border-white/5 pt-3">
+            <div className="space-y-2 border-t border-fg/[.06] pt-3">
               {online.status === 'idle' && (
                 <Button className="w-full" onClick={searchOnline}>
-                  🌐 Искать в Open Food Facts
+                  <Globe size={16} /> Искать в Open Food Facts
                 </Button>
               )}
-              {online.status === 'loading' && <p className="text-center text-sm text-zinc-400">Ищем онлайн…</p>}
-              {online.status === 'error' && <p className="text-center text-sm text-amber-400">{online.msg}</p>}
+              {online.status === 'loading' && <p className="text-center text-sm text-fg/55">Ищем онлайн…</p>}
+              {online.status === 'error' && <p className="text-center text-sm text-amber-600">{online.msg}</p>}
               {online.status === 'done' && (
                 <>
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-fg/45">
                     Open Food Facts: найдено {online.items.length}, сохранено в локальную базу
                   </div>
-                  <ul className="divide-y divide-white/5">
+                  <ul className="divide-y divide-fg/[.06]">
                     {onlineNew.map((f) => (
                       <FoodRow key={f.id} food={f} onPick={onPick} />
                     ))}

@@ -1,11 +1,11 @@
 import type { Food, Macros, MealEntry, MealType, RecipeIngredient } from '../types';
 
-export const MEALS: { id: MealType; label: string; icon: string }[] = [
-  { id: 'breakfast', label: 'Завтрак', icon: '🍳' },
-  { id: 'snack', label: 'Перекус', icon: '🍎' },
-  { id: 'lunch', label: 'Обед', icon: '🍲' },
-  { id: 'postworkout', label: 'После тренировки', icon: '💪' },
-  { id: 'dinner', label: 'Ужин', icon: '🍽️' },
+export const MEALS: { id: MealType; label: string }[] = [
+  { id: 'breakfast', label: 'Завтрак' },
+  { id: 'snack', label: 'Перекус' },
+  { id: 'lunch', label: 'Обед' },
+  { id: 'postworkout', label: 'После тренировки' },
+  { id: 'dinner', label: 'Ужин' },
 ];
 
 export const ZERO: Macros = { kcal: 0, protein: 0, fat: 0, carbs: 0 };

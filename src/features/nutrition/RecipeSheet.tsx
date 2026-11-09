@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { db } from '../../db/db';
 import { Button, Field, NumInput, Sheet, TextInput } from '../../components/ui';
@@ -56,12 +57,12 @@ export function RecipeSheet({ open, food, onClose }: { open: boolean; food?: Foo
           </Field>
 
           <div className="text-sm font-medium">Ингредиенты</div>
-          <ul className="divide-y divide-white/5 rounded-xl bg-zinc-950/40 px-3">
+          <ul className="divide-y divide-fg/[.06] rounded-xl bg-fg/[.05] px-3">
             {items.map((it, idx) => (
               <li key={idx} className="flex items-center gap-2 py-2">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">{it.name}</div>
-                  <div className="text-xs text-zinc-500">{Math.round(scale(it, it.grams).kcal)} ккал</div>
+                  <div className="text-xs text-fg/45">{Math.round(scale(it, it.grams).kcal)} ккал</div>
                 </div>
                 <div className="w-20">
                   <NumInput
@@ -70,13 +71,13 @@ export function RecipeSheet({ open, food, onClose }: { open: boolean; food?: Foo
                     onChange={(v) => setItems(items.map((x, j) => (j === idx ? { ...x, grams: v ?? 0 } : x)))}
                   />
                 </div>
-                <span className="text-xs text-zinc-500">г</span>
-                <button className="p-1.5 text-red-400" onClick={() => setItems(items.filter((_, j) => j !== idx))} aria-label="Убрать">
-                  ✕
+                <span className="text-xs text-fg/45">г</span>
+                <button className="grid h-8 w-8 place-items-center rounded-full text-red-600 active:bg-red-50" onClick={() => setItems(items.filter((_, j) => j !== idx))} aria-label="Убрать">
+                  <X size={16} strokeWidth={2.4} />
                 </button>
               </li>
             ))}
-            {!items.length && <li className="py-3 text-center text-sm text-zinc-500">Добавьте продукты</li>}
+            {!items.length && <li className="py-3 text-center text-sm text-fg/45">Добавьте продукты</li>}
           </ul>
           <Button className="w-full" onClick={() => setPicker(true)}>
             + Добавить ингредиент
@@ -86,9 +87,9 @@ export function RecipeSheet({ open, food, onClose }: { open: boolean; food?: Foo
             <NumInput value={totalWeight} placeholder={String(Math.round(rawWeight))} onChange={setTotalWeight} />
           </Field>
 
-          <div className="rounded-xl bg-zinc-800/60 p-3 text-sm">
+          <div className="rounded-xl bg-fg/[.04] p-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-zinc-400">Всё блюдо</span>
+              <span className="text-fg/55">Всё блюдо</span>
               <span className="tabular-nums">
                 {Math.round(total.kcal)} ккал · Б {fmt(total.protein)} · Ж {fmt(total.fat)} · У {fmt(total.carbs)}
               </span>

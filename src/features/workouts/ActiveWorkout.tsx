@@ -1,3 +1,4 @@
+import { Check, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../../db/db';
 import { Button, Card, NumInput, PageHeader } from '../../components/ui';
@@ -76,16 +77,16 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
         }
       />
       <div className="space-y-3 px-4 pb-28">
-        <div className="flex items-center justify-between text-sm text-zinc-400">
+        <div className="flex items-center justify-between text-sm font-semibold tabular-nums text-fg/55">
           <span>
             {formatDuration(Date.now() - w.startedAt)} · подходов {doneCount}/{totalSets}
           </span>
-          <button onClick={cancel} className="text-red-400">
+          <button onClick={cancel} className="font-semibold text-red-600">
             Отменить
           </button>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
-          <div className="h-full bg-accent transition-all" style={{ width: `${(doneCount / Math.max(1, totalSets)) * 100}%` }} />
+        <div className="h-2 overflow-hidden rounded-full bg-fg/[.06]">
+          <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${(doneCount / Math.max(1, totalSets)) * 100}%` }} />
         </div>
 
         {w.exercises.map((ex, i) => {
@@ -96,31 +97,31 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
             <Card key={`${ex.exerciseId}-${i}`}>
               <div className="flex items-start gap-2">
                 <div className="flex-1">
-                  <h3 className="font-semibold leading-tight">{ex.name}</h3>
-                  <div className="mt-0.5 text-xs text-zinc-400">
+                  <h3 className="text-base font-extrabold leading-tight">{ex.name}</h3>
+                  <div className="mt-0.5 text-xs text-fg/55">
                     {ex.plannedSets}×{formatReps(ex.repsMin, ex.repsMax, ex.note)}
                     {ex.note && (ex.repsMin || ex.repsMax) ? ` · ${ex.note}` : ''} · отдых {ex.rest} с
                   </div>
                 </div>
                 {increaseNow && (
-                  <span className="shrink-0 rounded-full bg-accent/15 px-2 py-1 text-xs font-semibold text-accent">
-                    ↑ Увеличь вес
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent-strong">
+                    <TrendingUp size={14} strokeWidth={2.6} /> Увеличь вес
                   </span>
                 )}
               </div>
 
-              <div className="mt-2 rounded-lg bg-zinc-950/50 px-2.5 py-1.5 text-xs text-zinc-400">
+              <div className="mt-3 rounded-xl bg-bg px-3 py-2 text-xs font-medium text-fg/55">
                 {last ? (
                   <>
                     Прошлый раз ({formatShort(last.workout.date)}):{' '}
-                    <span className="text-zinc-200">{formatSets(last.exercise.sets)}</span>
+                    <span className="font-bold text-fg">{formatSets(last.exercise.sets)}</span>
                   </>
                 ) : (
                   'Прошлых результатов нет — подбери рабочий вес'
                 )}
               </div>
 
-              <div className="mt-3 grid grid-cols-[1.5rem_1fr_1fr_2.75rem] items-center gap-2 text-xs text-zinc-500">
+              <div className="mt-3 grid grid-cols-[1.5rem_1fr_1fr_2.75rem] items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-fg/40">
                 <span>#</span>
                 <span className="text-center">Вес, кг</span>
                 <span className="text-center">Повторы</span>
@@ -133,10 +134,10 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                     <div
                       key={si}
                       className={`grid grid-cols-[1.5rem_1fr_1fr_2.75rem] items-center gap-2 rounded-lg ${
-                        s.done ? 'bg-accent/10' : ''
+                        s.done ? 'bg-accent-soft/70' : ''
                       }`}
                     >
-                      <span className="text-center text-sm text-zinc-400">{si + 1}</span>
+                      <span className="text-center text-sm font-bold text-fg/40">{si + 1}</span>
                       <NumInput
                         ariaLabel={`Вес, подход ${si + 1}`}
                         value={s.weight}
@@ -153,11 +154,11 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                       <button
                         onClick={() => toggleDone(i, si)}
                         aria-label={s.done ? 'Снять отметку' : 'Подход выполнен'}
-                        className={`flex h-10 w-11 items-center justify-center rounded-lg text-lg ${
-                          s.done ? 'bg-accent-strong text-zinc-950' : 'bg-zinc-800 text-zinc-500'
+                        className={`grid h-10 w-11 place-items-center rounded-xl transition-all active:scale-90 ${
+                          s.done ? 'bg-accent text-white shadow-lift' : 'border border-fg/10 bg-surface text-fg/30'
                         }`}
                       >
-                        ✓
+                        <Check size={20} strokeWidth={3} />
                       </button>
                     </div>
                   );
@@ -166,7 +167,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
 
               <div className="mt-2 flex items-center gap-2">
                 <button
-                  className="rounded-lg px-2 py-1 text-xs text-zinc-400 active:bg-zinc-800"
+                  className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-accent active:bg-accent-soft"
                   onClick={() =>
                     updateEx(i, (e) => ({
                       ...e,
@@ -178,7 +179,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                 </button>
                 {ex.sets.length > 1 && (
                   <button
-                    className="rounded-lg px-2 py-1 text-xs text-zinc-400 active:bg-zinc-800"
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-fg/45 active:bg-fg/[.06]"
                     onClick={() => updateEx(i, (e) => ({ ...e, sets: e.sets.slice(0, -1) }))}
                   >
                     − подход
@@ -186,7 +187,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                 )}
                 <span className="flex-1" />
                 {topReachedToday && (
-                  <span className="text-xs font-medium text-accent">Верх диапазона взят — в след. раз +вес</span>
+                  <span className="text-xs font-bold text-accent">Верх диапазона взят — в след. раз +вес</span>
                 )}
               </div>
             </Card>
