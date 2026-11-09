@@ -3,6 +3,7 @@ import { db } from '../../db/db';
 import { Button, Field, NumInput, Sheet, TextInput } from '../../components/ui';
 import { uid } from '../../lib/date';
 import type { Food } from '../../types';
+import { shareFood } from '../../lib/foodApi';
 
 type Draft = { name: string; brand: string; barcode: string; kcal: number | null; protein: number | null; fat: number | null; carbs: number | null };
 
@@ -30,8 +31,12 @@ export function CustomFoodSheet({
   onSaved: (f: Food) => void;
 }) {
   const [d, setD] = useState<Draft>(fromFood(food, barcode));
+  const [share, setShare] = useState(true);
   useEffect(() => {
-    if (open) setD(fromFood(food, barcode));
+    if (open) {
+      setD(fromFood(food, barcode));
+      setShare(true);
+    }
   }, [open, food, barcode]);
 
   const autoKcal = Math.round((d.protein ?? 0) * 4 + (d.fat ?? 0) * 9 + (d.carbs ?? 0) * 4);
@@ -51,6 +56,8 @@ export function CustomFoodSheet({
       carbs: d.carbs ?? 0,
     };
     await db.foods.put(f);
+    // Новый продукт сразу уходит в общую библиотеку (без модерации). Ошибка сети не мешает сохранению.
+    if (!food && share) shareFood(f).catch((e) => console.warn('Не удалось отправить в общую библиотеку', e));
     onSaved(f);
   };
 
@@ -91,6 +98,20 @@ export function CustomFoodSheet({
           </Field>
         </div>
         <p className="text-xs text-fg/45">Если не указать калории, они посчитаются из БЖУ (4/9/4).</p>
+        {!food && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-accent-soft/60 p-3">
+            <input
+              type="checkbox"
+              checked={share}
+              onChange={(e) => setShare(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-accent)]"
+            />
+            <span className="text-sm">
+              <span className="font-bold">Добавить в общую библиотеку</span>
+              <span className="block text-xs font-medium text-fg/50">Продукт смогут найти другие пользователи приложения</span>
+            </span>
+          </label>
+        )}
         <Button variant="primary" className="w-full py-3" disabled={!d.name.trim()} onClick={save}>
           Сохранить
         </Button>

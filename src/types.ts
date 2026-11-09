@@ -51,7 +51,7 @@ export interface Workout {
 }
 
 // ===== Питание =====
-export type FoodSource = 'builtin' | 'custom' | 'off' | 'recipe';
+export type FoodSource = 'builtin' | 'custom' | 'off' | 'recipe' | 'shared';
 
 export interface Macros {
   kcal: number;

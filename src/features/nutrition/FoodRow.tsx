@@ -6,7 +6,7 @@ import { toggleFavorite } from '../../lib/foods';
 const badges: Partial<Record<Food['source'], string>> = {
   custom: 'мой',
   recipe: 'рецепт',
-  off: 'OFF',
+  shared: 'от пользователей',
 };
 
 export function FoodRow({ food, onPick, onEdit }: { food: Food; onPick: (f: Food) => void; onEdit?: (f: Food) => void }) {

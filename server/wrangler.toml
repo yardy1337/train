@@ -1,0 +1,14 @@
+# Cloudflare Worker «train-food-api» — общая библиотека продуктов приложения «Мой тренер».
+# Деплой: npx wrangler deploy (нужен CLOUDFLARE_API_TOKEN с правами Workers Scripts: Edit и D1: Edit).
+name = "train-food-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "train-food"
+database_id = "LOCAL_PLACEHOLDER"
+
+[vars]
+ALLOWED_ORIGINS = "https://yardy1337.github.io,http://localhost:5173,http://localhost:4173"

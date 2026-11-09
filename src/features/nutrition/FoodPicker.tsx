@@ -1,4 +1,4 @@
-import { ChevronLeft, Plus, ScanBarcode } from 'lucide-react';
+import { ChevronLeft, Loader2, Plus, ScanBarcode } from 'lucide-react';
 import { motion } from 'motion/react';
 import { EASE } from '../../components/motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -7,6 +7,7 @@ import { db } from '../../db/db';
 import { Button, Empty, Segmented, Sheet, TextInput } from '../../components/ui';
 import { searchFoods } from '../../lib/nutrition';
 import { getByBarcode } from '../../lib/openFoodFacts';
+import { barcodeCloud, searchCloud } from '../../lib/foodApi';
 import { cacheFoods, findByBarcode } from '../../lib/foods';
 import type { Food } from '../../types';
 import { FoodRow } from './FoodRow';
@@ -51,6 +52,46 @@ export function FoodPicker({
   }, [open]);
 
   const local = useMemo(() => searchFoods(foods, q), [foods, q]);
+
+  // Общая библиотека: ищем с задержкой после ввода, показываем то, чего нет в телефоне.
+  const [cloud, setCloud] = useState<{ q: string; status: 'idle' | 'loading' | 'done' | 'error'; items: Food[] }>({
+    q: '',
+    status: 'idle',
+    items: [],
+  });
+  useEffect(() => {
+    const query = q.trim();
+    if (!open || query.length < 2) {
+      setCloud({ q: '', status: 'idle', items: [] });
+      return;
+    }
+    if (!navigator.onLine) {
+      setCloud({ q: query, status: 'error', items: [] });
+      return;
+    }
+    const ctrl = new AbortController();
+    setCloud((c) => ({ q: query, status: 'loading', items: c.q && query.startsWith(c.q) ? c.items : [] }));
+    const t = setTimeout(() => {
+      searchCloud(query, ctrl.signal)
+        .then((items) => setCloud({ q: query, status: 'done', items }))
+        .catch((e) => {
+          if (e?.name !== 'AbortError') setCloud({ q: query, status: 'error', items: [] });
+        });
+    }, 350);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [q, open]);
+  const cloudNew = useMemo(() => {
+    const known = new Set(local.map((f) => f.id));
+    const names = new Set(local.map((f) => `${f.name}|${f.brand ?? ''}`.toLowerCase()));
+    return cloud.items.filter((f) => !known.has(f.id) && !names.has(`${f.name}|${f.brand ?? ''}`.toLowerCase()));
+  }, [cloud.items, local]);
+  const pickCloud = async (f: Food) => {
+    await cacheFoods([f]);
+    onPick(f);
+  };
   const categories = useMemo(() => {
     const map = new Map<string, number>();
     for (const f of foods) if (f.source === 'builtin' && f.category) map.set(f.category, (map.get(f.category) ?? 0) + 1);
@@ -86,14 +127,15 @@ export function FoodPicker({
           onPick(cached);
           return;
         }
-        const found = await getByBarcode(code);
+        // Сначала общая библиотека (сервер сам спросит Open Food Facts), при сбое — OFF напрямую.
+        const found = await barcodeCloud(code).catch(() => getByBarcode(code));
         if (found) {
           await cacheFoods([found]);
           setScanMsg(null);
           onPick(found);
           return;
         }
-        setScanMsg(`Продукт ${code} не найден в Open Food Facts.`);
+        setScanMsg(`Продукт ${code} пока не знаем — добавьте его, и он появится в общей библиотеке.`);
         setCustomOpen({ barcode: code });
       } catch {
         setScanMsg('Не удалось выполнить поиск (нет сети?). Можно добавить продукт вручную.');
@@ -193,7 +235,25 @@ export function FoodPicker({
             ))}
           </ul>
 
-          {tab === 'search' && q.trim() && !local.length && (
+          {tab === 'search' && q.trim().length >= 2 && (cloudNew.length > 0 || cloud.status === 'loading' || !navigator.onLine) && (
+            <div className="space-y-1 pt-2">
+              <div className="flex items-center gap-2">
+                <span className="eyebrow">Общая библиотека</span>
+                {cloud.status === 'loading' && <Loader2 size={13} className="animate-spin text-fg/35" />}
+                <span className="flex-1" />
+                <span className="text-[10px] font-semibold text-fg/30">данные: Open Food Facts, ODbL</span>
+              </div>
+              {!navigator.onLine && (
+                <p className="py-2 text-sm font-medium text-fg/40">Нет интернета — показываем только продукты с телефона</p>
+              )}
+              <ul className="divide-y divide-fg/[.06]">
+                {cloudNew.map((f) => (
+                  <FoodRow key={f.id} food={f} onPick={pickCloud} />
+                ))}
+              </ul>
+            </div>
+          )}
+          {tab === 'search' && q.trim() && !local.length && !cloudNew.length && cloud.status !== 'loading' && (
             <Empty>Ничего не нашлось — можно создать свой продукт</Empty>
           )}
           {tab === 'fav' && !favorites.length && <Empty>Нажмите звёздочку у продукта, чтобы добавить его сюда</Empty>}
