@@ -1,8 +1,12 @@
 import { Screen } from '../../components/motion';
-import { Check, TrendingUp } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, Check, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../../db/db';
-import { Button, Card, NumInput, PageHeader } from '../../components/ui';
+import { Button, Card, Field, NumInput, PageHeader, Sheet, TextInput } from '../../components/ui';
+import { defaultsFor, type CatalogExercise } from '../../data/exercises';
+import { uid } from '../../lib/date';
+import { SwapSheet } from './SwapSheet';
+import { ExercisePicker } from './ExercisePicker';
 import { useRestTimer } from '../../components/RestTimer';
 import { findLastResult, formatReps, formatSets, shouldIncrease } from '../../lib/workout';
 import { formatDuration, formatShort } from '../../lib/date';
@@ -85,6 +89,78 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
     if (w.id) await db.workouts.delete(w.id);
   };
 
+  // ---- Корректировка тренировки ----
+  const [menuFor, setMenuFor] = useState<number | null>(null);
+  const [swapFor, setSwapFor] = useState<number | null>(null);
+  const [adjustFor, setAdjustFor] = useState<number | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [toProgram, setToProgram] = useState(false);
+
+  /** Изменить упражнение и в программе дня (по id упражнения программы). */
+  const patchProgram = async (exerciseId: string, patch: { name?: string; sets?: number; repsMin?: number; repsMax?: number; rest?: number; note?: string }) => {
+    const day = await db.programDays.get(w.dayId);
+    if (!day || !day.exercises.some((e) => e.id === exerciseId)) return;
+    await db.programDays.put({ ...day, exercises: day.exercises.map((e) => (e.id === exerciseId ? { ...e, ...patch } : e)) });
+  };
+
+  const swap = async (i: number, name: string, catalog?: CatalogExercise) => {
+    const ex = w.exercises[i];
+    const last = findLastResult(history, name, w.id);
+    const lastDone = last ? last.exercise.sets.filter((s) => s.done) : [];
+    updateEx(i, (e) => ({
+      ...e,
+      name,
+      sets: e.sets.map((_, k) => ({ weight: lastDone[k]?.weight ?? lastDone[lastDone.length - 1]?.weight ?? null, reps: null, done: false })),
+    }));
+    if (toProgram) await patchProgram(ex.exerciseId, { name });
+    void catalog;
+    setSwapFor(null);
+  };
+
+  const move = (i: number, dir: -1 | 1) =>
+    setW((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.exercises.length) return prev;
+      const list = [...prev.exercises];
+      [list[i], list[j]] = [list[j], list[i]];
+      return { ...prev, exercises: list };
+    });
+
+  const remove = (i: number) => {
+    const ex = w.exercises[i];
+    if (ex.sets.some((s) => s.done) && !confirm(`Убрать «${ex.name}»? Отмеченные подходы этого упражнения пропадут.`)) return;
+    setW((prev) => ({ ...prev, exercises: prev.exercises.filter((_, k) => k !== i) }));
+  };
+
+  const addExercise = async (name: string, catalog?: CatalogExercise) => {
+    const d = defaultsFor(catalog?.kind ?? 'iso');
+    const last = findLastResult(history, name, w.id);
+    const lastDone = last ? last.exercise.sets.filter((s) => s.done) : [];
+    const id = `x-${uid()}`;
+    const ex: WorkoutExercise = {
+      exerciseId: id,
+      name,
+      plannedSets: d.sets,
+      repsMin: d.repsMin,
+      repsMax: d.repsMax,
+      note: d.note,
+      rest: d.rest,
+      sets: Array.from({ length: d.sets }, (_, k) => ({ weight: lastDone[k]?.weight ?? lastDone[lastDone.length - 1]?.weight ?? null, reps: null, done: false })),
+    };
+    setW((prev) => ({ ...prev, exercises: [...prev.exercises, ex] }));
+    if (toProgram) {
+      const day = await db.programDays.get(w.dayId);
+      if (day) await db.programDays.put({ ...day, exercises: [...day.exercises, { id, name, sets: d.sets, repsMin: d.repsMin, repsMax: d.repsMax, rest: d.rest, note: d.note }] });
+    }
+    setAddOpen(false);
+  };
+
+  const openTool = (fn: () => void) => {
+    setMenuFor(null);
+    setToProgram(false);
+    fn();
+  };
+
   const totalSets = w.exercises.reduce((t, e) => t + e.sets.length, 0);
   const doneCount = w.exercises.reduce((t, e) => t + e.sets.filter((s) => s.done).length, 0);
 
@@ -116,7 +192,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           const increaseNow = last ? shouldIncrease({ ...last.exercise, repsMax: ex.repsMax, plannedSets: ex.plannedSets }) : false;
           const topReachedToday = shouldIncrease(ex);
           return (
-            <Card key={`${ex.exerciseId}-${i}`} index={i}>
+            <Card key={ex.exerciseId} index={i}>
               <div className="flex items-start gap-2">
                 <div className="flex-1">
                   <h3 className="text-base font-extrabold leading-tight">{ex.name}</h3>
@@ -130,6 +206,13 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                     <TrendingUp size={14} strokeWidth={2.6} /> Увеличь вес
                   </span>
                 )}
+                <button
+                  onClick={() => setMenuFor(i)}
+                  aria-label={`Изменить «${ex.name}»`}
+                  className="-mr-1.5 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-fg/50 active:bg-fg/[.08]"
+                >
+                  <MoreHorizontal size={20} />
+                </button>
               </div>
 
               <div className="mt-3 rounded-xl bg-bg px-3 py-2 text-xs font-medium text-fg/55">
@@ -216,10 +299,174 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           );
         })}
 
+        <Button className="w-full py-3" onClick={() => openTool(() => setAddOpen(true))}>
+          <Plus size={16} strokeWidth={2.6} /> Добавить упражнение
+        </Button>
         <Button variant="primary" className="w-full py-3" onClick={finish}>
           Завершить тренировку
         </Button>
       </div>
+      {/* Меню упражнения */}
+      <Sheet open={menuFor !== null} onClose={() => setMenuFor(null)} title={menuFor !== null ? w.exercises[menuFor]?.name ?? '' : ''}>
+        {menuFor !== null && (
+          <div className="space-y-1.5">
+            <MenuItem icon={<ArrowLeftRight size={18} />} label="Заменить на похожее" hint="Тренажёр занят, нет снаряда, неудобно" onClick={() => { const i = menuFor; openTool(() => setSwapFor(i)); }} />
+            <MenuItem icon={<SlidersHorizontal size={18} />} label="Подходы, повторы, отдых" onClick={() => { const i = menuFor; openTool(() => setAdjustFor(i)); }} />
+            <div className="grid grid-cols-2 gap-1.5">
+              <MenuItem icon={<ArrowUp size={18} />} label="Выше" disabled={menuFor === 0} onClick={() => { move(menuFor, -1); setMenuFor(null); }} />
+              <MenuItem icon={<ArrowDown size={18} />} label="Ниже" disabled={menuFor === w.exercises.length - 1} onClick={() => { move(menuFor, 1); setMenuFor(null); }} />
+            </div>
+            <MenuItem icon={<Trash2 size={18} />} label="Убрать из тренировки" danger onClick={() => { const i = menuFor; setMenuFor(null); remove(i); }} />
+          </div>
+        )}
+      </Sheet>
+
+      {/* Замена */}
+      <SwapSheet
+        open={swapFor !== null}
+        current={swapFor !== null ? w.exercises[swapFor]?.name ?? '' : ''}
+        onClose={() => setSwapFor(null)}
+        onPick={(name, c) => swapFor !== null && swap(swapFor, name, c)}
+        footer={<ProgramToggle checked={toProgram} onChange={setToProgram} text="Заменить и в программе" hint="Иначе — только в сегодняшней тренировке" />}
+      />
+
+      {/* Настройка подходов */}
+      {adjustFor !== null && w.exercises[adjustFor] && (
+        <AdjustSheet
+          ex={w.exercises[adjustFor]}
+          toProgram={toProgram}
+          setToProgram={setToProgram}
+          onClose={() => setAdjustFor(null)}
+          onSave={async (patch) => {
+            const i = adjustFor;
+            const ex = w.exercises[i];
+            updateEx(i, (e) => {
+              const sets = [...e.sets];
+              while (sets.length < patch.sets) sets.push({ weight: sets[sets.length - 1]?.weight ?? null, reps: null, done: false });
+              while (sets.length > patch.sets && sets.length > 1 && !sets[sets.length - 1].done) sets.pop();
+              return { ...e, plannedSets: patch.sets, repsMin: patch.repsMin, repsMax: patch.repsMax, rest: patch.rest, note: patch.note, sets };
+            });
+            if (toProgram) await patchProgram(ex.exerciseId, { sets: patch.sets, repsMin: patch.repsMin, repsMax: patch.repsMax, rest: patch.rest, note: patch.note });
+            setAdjustFor(null);
+          }}
+        />
+      )}
+
+      {/* Добавить упражнение */}
+      <Sheet open={addOpen} onClose={() => setAddOpen(false)} title="Добавить упражнение" lazy>
+        <AddExercise
+          taken={new Set(w.exercises.map((e) => e.name.toLowerCase().replace(/ё/g, 'е')))}
+          toProgram={toProgram}
+          setToProgram={setToProgram}
+          onPick={addExercise}
+        />
+      </Sheet>
     </Screen>
+  );
+}
+
+function MenuItem({ icon, label, hint, onClick, danger, disabled }: { icon: React.ReactNode; label: string; hint?: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex w-full items-center gap-3 rounded-2xl bg-fg/[.06] px-4 py-3.5 text-left transition-colors active:bg-fg/[.1] disabled:opacity-35 ${danger ? 'text-red-400' : ''}`}
+    >
+      <span className={danger ? '' : 'text-accent'}>{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-bold">{label}</span>
+        {hint && <span className="block text-xs font-medium text-fg/45">{hint}</span>}
+      </span>
+    </button>
+  );
+}
+
+function ProgramToggle({ checked, onChange, text, hint }: { checked: boolean; onChange: (v: boolean) => void; text: string; hint: string }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-fg/[.08] px-4 py-3">
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold">{text}</span>
+        <span className="block text-xs font-medium text-fg/45">{hint}</span>
+      </span>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
+      <span className="relative h-7 w-12 shrink-0 rounded-full bg-fg/15 transition-colors peer-checked:bg-accent after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-fg after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-bg" />
+    </label>
+  );
+}
+
+function AdjustSheet({
+  ex,
+  toProgram,
+  setToProgram,
+  onClose,
+  onSave,
+}: {
+  ex: WorkoutExercise;
+  toProgram: boolean;
+  setToProgram: (v: boolean) => void;
+  onClose: () => void;
+  onSave: (p: { sets: number; repsMin: number; repsMax: number; rest: number; note?: string }) => void;
+}) {
+  const [d, setD] = useState({ sets: ex.sets.length, repsMin: ex.repsMin, repsMax: ex.repsMax, rest: ex.rest, note: ex.note ?? '' });
+  return (
+    <Sheet open onClose={onClose} title={ex.name}>
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <Field label="Подходы">
+            <NumInput decimal={false} value={d.sets} onChange={(v) => setD({ ...d, sets: Math.min(12, Math.max(1, Math.round(v ?? 1))) })} />
+          </Field>
+          <Field label="Повторы от">
+            <NumInput decimal={false} value={d.repsMin || null} placeholder="—" onChange={(v) => setD({ ...d, repsMin: Math.round(v ?? 0) })} />
+          </Field>
+          <Field label="Повторы до">
+            <NumInput decimal={false} value={d.repsMax || null} placeholder="—" onChange={(v) => setD({ ...d, repsMax: Math.round(v ?? 0) })} />
+          </Field>
+        </div>
+        <div>
+          <span className="eyebrow mb-1.5 block">Отдых, сек</span>
+          <div className="grid grid-cols-4 gap-2">
+            {[60, 90, 120].map((v) => (
+              <Button key={v} variant={d.rest === v ? 'primary' : 'secondary'} className="px-2" onClick={() => setD({ ...d, rest: v })}>
+                {v}
+              </Button>
+            ))}
+            <NumInput decimal={false} value={d.rest} ariaLabel="Отдых, секунд" onChange={(v) => setD({ ...d, rest: Math.max(10, Math.round(v ?? 60)) })} />
+          </div>
+        </div>
+        <Field label="Пояснение">
+          <TextInput value={d.note} onChange={(e) => setD({ ...d, note: e.target.value })} placeholder="на каждую ногу, пауза 2 сек…" />
+        </Field>
+        <ProgramToggle checked={toProgram} onChange={setToProgram} text="Сохранить и в программе" hint="Иначе — только в сегодняшней тренировке" />
+        <Button variant="primary" className="w-full py-3" onClick={() => onSave({ ...d, note: d.note.trim() || undefined })}>
+          Применить
+        </Button>
+      </div>
+    </Sheet>
+  );
+}
+
+function AddExercise({
+  taken,
+  toProgram,
+  setToProgram,
+  onPick,
+}: {
+  taken: Set<string>;
+  toProgram: boolean;
+  setToProgram: (v: boolean) => void;
+  onPick: (name: string, c?: CatalogExercise) => void;
+}) {
+  const [q, setQ] = useState('');
+  return (
+    <div className="space-y-3">
+      <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск или своё название" />
+      {q.trim().length > 1 && (
+        <Button className="w-full" onClick={() => onPick(q.trim())}>
+          Добавить «{q.trim()}»
+        </Button>
+      )}
+      <ProgramToggle checked={toProgram} onChange={setToProgram} text="Добавить и в программу" hint="Иначе — только в сегодняшнюю тренировку" />
+      <ExercisePicker query={q} taken={taken} onPick={(e) => onPick(e.name, e)} />
+    </div>
   );
 }

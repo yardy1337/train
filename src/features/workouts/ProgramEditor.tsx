@@ -1,6 +1,7 @@
 import { Screen, spring } from '../../components/motion';
 import { motion } from 'motion/react';
-import { ArrowDown, ArrowUp, Plus, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, Plus, Trash2, X } from 'lucide-react';
+import { SwapSheet } from './SwapSheet';
 import { useState } from 'react';
 import { db } from '../../db/db';
 import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, findProgram } from '../../data/programs';
@@ -18,6 +19,7 @@ const emptyExercise = (): ProgramExercise => ({ id: uid(), name: '', sets: 3, re
 export function ProgramEditor({ onBack }: { onBack: () => void }) {
   const days = useProgram();
   const [editing, setEditing] = useState<{ dayId: string; ex: ProgramExercise; isNew: boolean } | null>(null);
+  const [swapping, setSwapping] = useState<{ day: ProgramDay; id: string; name: string } | null>(null);
   // После выбора из справочника поле «Название» перестаёт фильтровать список.
   const [picked, setPicked] = useState(false);
   const openEditor = (v: { dayId: string; ex: ProgramExercise; isNew: boolean }) => {
@@ -111,6 +113,9 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
                       {formatTarget(e.sets, e.repsMin, e.repsMax, e.note)}
                       {e.note && (e.repsMin || e.repsMax) ? ` · ${e.note}` : ''} · {e.rest} с
                     </div>
+                  </button>
+                  <button className="grid h-8 w-8 place-items-center rounded-full text-accent active:bg-fg/[.06]" onClick={() => setSwapping({ day, id: e.id, name: e.name })} aria-label="Заменить на похожее">
+                    <ArrowLeftRight size={16} />
                   </button>
                   <button className="grid h-8 w-8 place-items-center rounded-full text-fg/45 active:bg-fg/[.06]" onClick={() => move(day, idx, -1)} aria-label="Выше">
                     <ArrowUp size={16} />
@@ -214,6 +219,17 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
           </div>
         )}
       </Sheet>
+      <SwapSheet
+        open={!!swapping}
+        current={swapping?.name ?? ''}
+        onClose={() => setSwapping(null)}
+        onPick={(name) => {
+          if (!swapping) return;
+          const fresh = days.find((d) => d.id === swapping.day.id) ?? swapping.day;
+          saveDay({ ...fresh, exercises: fresh.exercises.map((x) => (x.id === swapping.id ? { ...x, name } : x)) });
+          setSwapping(null);
+        }}
+      />
     </Screen>
   );
 }
