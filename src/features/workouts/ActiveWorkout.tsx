@@ -66,6 +66,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
     const ex = w.exercises[i];
     const s = ex.sets[si];
     if (s.done) return updateSet(i, si, { done: false });
+    navigator.vibrate?.(15); // лёгкий отклик на Android
     const prevSet = prev[i]?.exercise.sets.filter((x) => x.done)[si];
     const reps = s.reps ?? prevSet?.reps ?? (ex.repsMax || ex.repsMin || null);
     const weight = s.weight ?? prevSet?.weight ?? null;
@@ -169,7 +170,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
       <PageHeader
         title={`${w.dayName} · ${w.dayTitle}`}
         right={
-          <Button variant="primary" onClick={finish}>
+          <Button variant="gold" onClick={finish}>
             Завершить
           </Button>
         }
@@ -179,7 +180,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           <span>
             {formatDuration(Date.now() - w.startedAt)} · подходов {doneCount}/{totalSets}
           </span>
-          <button onClick={cancel} className="font-semibold text-red-400">
+          <button onClick={cancel} className="font-semibold text-red-600">
             Отменить
           </button>
         </div>
@@ -260,7 +261,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                         onClick={() => toggleDone(i, si)}
                         aria-label={s.done ? 'Снять отметку' : 'Подход выполнен'}
                         className={`grid h-10 w-11 place-items-center rounded-xl transition-all active:scale-90 ${
-                          s.done ? 'bg-accent text-bg shadow-lift' : 'border border-fg/10 bg-surface text-fg/30'
+                          s.done ? 'bg-accent text-white shadow-lift' : 'border border-fg/10 bg-surface text-fg/30'
                         }`}
                       >
                         <Check size={20} strokeWidth={3} />
@@ -370,7 +371,7 @@ function MenuItem({ icon, label, hint, onClick, danger, disabled }: { icon: Reac
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex w-full items-center gap-3 rounded-2xl bg-fg/[.06] px-4 py-3.5 text-left transition-colors active:bg-fg/[.1] disabled:opacity-35 ${danger ? 'text-red-400' : ''}`}
+      className={`flex w-full items-center gap-3 rounded-2xl bg-fg/[.06] px-4 py-3.5 text-left transition-colors active:bg-fg/[.1] disabled:opacity-35 ${danger ? 'text-red-600' : ''}`}
     >
       <span className={danger ? '' : 'text-accent'}>{icon}</span>
       <span className="min-w-0 flex-1">

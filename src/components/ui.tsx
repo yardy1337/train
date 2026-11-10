@@ -5,13 +5,14 @@ import { parseNum } from '../lib/format';
 import { itemVariants, spring } from './motion';
 import { lockScroll } from '../lib/smoothScroll';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-accent text-bg font-extrabold shadow-lift active:bg-accent-strong',
-  secondary: 'bg-fg/10 text-fg font-semibold active:bg-fg/15',
+  primary: 'bg-accent text-white font-bold shadow-lift active:bg-accent-strong',
+  secondary: 'bg-accent-soft text-fg font-semibold active:bg-fg/10',
   ghost: 'bg-transparent text-fg/70 font-semibold active:bg-fg/[.06]',
-  danger: 'bg-red-500/15 text-red-400 font-semibold active:bg-red-500/150/25',
+  gold: 'bg-gold text-navy font-extrabold shadow-gold active:bg-gold-strong',
+  danger: 'bg-red-500/15 text-red-600 font-semibold active:bg-red-500/25',
 };
 
 export function Button({
@@ -40,7 +41,8 @@ export function IconButton({
       type="button"
       aria-label={label}
       {...props}
-      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-fg/60 transition-colors active:bg-fg/[.06] ${className}`}
+      // Цвет и фон по умолчанию — только если их не задали снаружи (иначе классы спорят).
+      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors ${/(^|\s)text-/.test(className) ? '' : 'text-fg/60'} ${/(^|\s)active:bg-/.test(className) ? '' : 'active:bg-fg/[.06]'} ${className}`}
     >
       {children}
     </button>
@@ -74,12 +76,26 @@ export function Card({
   );
 }
 
-export function PageHeader({ title, left, right }: { title: string; left?: ReactNode; right?: ReactNode }) {
+/** Тёмно-синяя шапка экрана со скруглённым низом — «рамка» над светлым контентом. */
+export function PageHeader({
+  title,
+  subtitle,
+  left,
+  right,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  left?: ReactNode;
+  right?: ReactNode;
+}) {
   return (
-    <header className="pt-safe sticky top-0 z-20 bg-bg">
-      <div className="flex h-16 items-center gap-1 px-4">
+    <header className="pt-safe sticky top-0 z-20 mb-4 rounded-b-[28px] bg-navy text-white shadow-lift">
+      <div className="flex min-h-16 items-center gap-1 px-4 pb-3 pt-3">
         {left}
-        <h1 className="flex-1 truncate text-2xl font-extrabold tracking-tight">{title}</h1>
+        <div className="min-w-0 flex-1">
+          {subtitle && <div className="truncate text-[11px] font-bold uppercase tracking-[0.14em] text-gold">{subtitle}</div>}
+          <h1 className="truncate text-2xl font-extrabold tracking-tight">{title}</h1>
+        </div>
         {right}
       </div>
     </header>
@@ -88,14 +104,14 @@ export function PageHeader({ title, left, right }: { title: string; left?: React
 
 export function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <IconButton label="Назад" onClick={onClick} className="-ml-2 text-fg">
+    <IconButton label="Назад" onClick={onClick} className="-ml-2 text-white active:bg-white/10">
       <ChevronLeft size={24} strokeWidth={2.4} />
     </IconButton>
   );
 }
 
 const inputBase =
-  'w-full rounded-xl border border-fg/10 bg-bg/70 text-base text-fg outline-none transition-colors placeholder:text-fg/35 focus:border-accent focus:ring-4 focus:ring-accent/15';
+  'w-full rounded-xl border border-fg/10 bg-surface text-base text-fg outline-none transition-colors placeholder:text-fg/35 focus:border-accent focus:ring-4 focus:ring-accent/15';
 
 /**
  * Числовое поле: хранит текст локально, чтобы можно было набрать «22,» без потери ввода.
@@ -186,7 +202,7 @@ export function Sheet({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-navy/50"
           onClick={onClose}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -267,7 +283,7 @@ export function ProgressBar({
           transition={{ type: 'spring', damping: 30, stiffness: 200 }}
         />
       </div>
-      <div className={`mt-1 text-right text-[11px] font-semibold tabular-nums ${over ? 'text-amber-400' : 'text-fg/40'}`}>
+      <div className={`mt-1 text-right text-[11px] font-semibold tabular-nums ${over ? 'text-amber-600' : 'text-fg/40'}`}>
         {over ? `перебор ${Math.round(-left)} ${unit}` : `осталось ${Math.round(left)} ${unit}`}
       </div>
     </div>
@@ -294,13 +310,13 @@ export function Segmented<T extends string>({
           key={o.id}
           onClick={() => onChange(o.id)}
           className={`relative flex-1 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-            value === o.id ? 'text-fg' : 'text-fg/50'
+            value === o.id ? 'text-fg' : 'text-fg/45'
           }`}
         >
           {value === o.id && (
             <motion.span
               layoutId={`seg-${options.map((x) => x.id).join('-')}`}
-              className="absolute inset-0 rounded-xl bg-fg/[.12]"
+              className="absolute inset-0 rounded-xl bg-surface shadow-card"
               transition={{ type: 'spring', damping: 30, stiffness: 400 }}
             />
           )}

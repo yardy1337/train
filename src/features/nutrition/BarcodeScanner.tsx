@@ -48,7 +48,7 @@ export function BarcodeScanner({ onDetected }: { onDetected: (code: string) => v
         <div className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-xl border-2 border-accent/80" />
       </div>
       {error ? (
-        <p className="text-sm text-amber-400">{error}. Введите штрихкод вручную.</p>
+        <p className="text-sm text-amber-600">{error}. Введите штрихкод вручную.</p>
       ) : (
         <p className="text-center text-sm text-fg/55">Наведите камеру на штрихкод</p>
       )}

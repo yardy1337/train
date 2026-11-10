@@ -11,7 +11,7 @@ const items: { id: Tab; label: string; Icon: LucideIcon }[] = [
 
 export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-fg/[.06] bg-surface">
+    <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 rounded-t-[24px] bg-navy shadow-[0_-8px_24px_-12px_rgb(11_31_75/0.5)]">
       <div className="mx-auto flex max-w-lg px-2">
         {items.map(({ id, label, Icon }) => {
           const active = tab === id;
@@ -20,14 +20,14 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
               key={id}
               onClick={() => onChange(id)}
               className={`relative flex flex-1 flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-bold transition-colors ${
-                active ? 'text-accent' : 'text-fg/40'
+                active ? 'text-white' : 'text-white/45'
               }`}
               aria-current={active ? 'page' : undefined}
             >
               {active && (
                 <motion.span
                   layoutId="nav-indicator"
-                  className="absolute top-0 h-[3px] w-8 rounded-b-full bg-gold"
+                  className="absolute top-1.5 h-[3px] w-8 rounded-full bg-gold"
                   transition={{ type: 'spring', damping: 30, stiffness: 400 }}
                 />
               )}

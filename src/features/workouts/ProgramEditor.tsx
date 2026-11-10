@@ -97,7 +97,7 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
                 defaultValue={day.title}
                 onBlur={(e) => saveDay({ ...day, title: e.target.value.trim() })}
               />
-              <button onClick={() => removeDay(day)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-red-400 active:bg-red-500/15" aria-label="Удалить день">
+              <button onClick={() => removeDay(day)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-red-600 active:bg-red-500/15" aria-label="Удалить день">
                 <Trash2 size={18} />
               </button>
             </div>
@@ -123,7 +123,7 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
                   <button className="grid h-8 w-8 place-items-center rounded-full text-fg/45 active:bg-fg/[.06]" onClick={() => move(day, idx, 1)} aria-label="Ниже">
                     <ArrowDown size={16} />
                   </button>
-                  <button className="grid h-8 w-8 place-items-center rounded-full text-red-400 active:bg-red-500/15" onClick={() => removeEx(day, e.id)} aria-label="Удалить">
+                  <button className="grid h-8 w-8 place-items-center rounded-full text-red-600 active:bg-red-500/15" onClick={() => removeEx(day, e.id)} aria-label="Удалить">
                     <X size={16} strokeWidth={2.4} />
                   </button>
                 </motion.li>

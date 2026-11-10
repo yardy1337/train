@@ -112,7 +112,7 @@ export function WorkoutHistory({ onBack }: { onBack: () => void }) {
                         key={d.name}
                         onClick={() => pickFilter(d.name)}
                         className={`relative rounded-full px-4 py-2 text-sm font-bold transition-colors ${
-                          active ? 'text-bg' : 'bg-surface text-fg/60 shadow-card'
+                          active ? 'text-white' : 'bg-surface text-fg/60 shadow-card'
                         }`}
                       >
                         {active && (
@@ -225,7 +225,7 @@ export function WorkoutHistory({ onBack }: { onBack: () => void }) {
                               </div>
                             ))}
                             <button
-                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-red-400 active:bg-red-500/15"
+                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-red-600 active:bg-red-500/15"
                               onClick={() => remove(w.id)}
                             >
                               <Trash2 size={14} /> Удалить тренировку

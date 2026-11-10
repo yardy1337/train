@@ -48,7 +48,7 @@ export function ExercisePicker({
                   key={g}
                   onClick={() => setGroup(g)}
                   className={`relative rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                    active ? 'text-bg' : 'bg-fg/[.05] text-fg/60'
+                    active ? 'text-white' : 'bg-fg/[.05] text-fg/60'
                   }`}
                 >
                   {active && <motion.span layoutId="mg-pill" className="absolute inset-0 rounded-full bg-accent" transition={spring} />}

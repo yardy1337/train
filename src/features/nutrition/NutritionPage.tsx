@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { scrollToTop } from '../../lib/smoothScroll';
 import { AnimatePresence, motion } from 'motion/react';
-import { AnimatedNumber, EASE, Screen } from '../../components/motion';
+import { EASE, Screen } from '../../components/motion';
+import { CalorieRing } from '../../components/CalorieRing';
+import { WaterCard } from './WaterCard';
 import { ChevronLeft, ChevronRight, History, Plus, Target } from 'lucide-react';
 import { MEAL_ICONS } from '../../components/mealIcons';
 import { db } from '../../db/db';
@@ -65,10 +67,10 @@ export function NutritionPage() {
         title="Питание"
         right={
           <div className="flex gap-1">
-            <IconButton label="История" onClick={() => setView('history')} className="bg-surface text-fg shadow-card">
+            <IconButton label="История" onClick={() => setView('history')} className="bg-white/10 text-white active:bg-white/20">
               <History size={18} />
             </IconButton>
-            <IconButton label="Цели" onClick={() => setGoalsOpen(true)} className="bg-surface text-fg shadow-card">
+            <IconButton label="Цели" onClick={() => setGoalsOpen(true)} className="bg-white/10 text-white active:bg-white/20">
               <Target size={18} />
             </IconButton>
           </div>
@@ -99,27 +101,22 @@ export function NutritionPage() {
         </div>
 
         <Card index={1} className="space-y-4">
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="eyebrow">Съедено за день</div>
-              <div className="mt-1 text-4xl font-extrabold tabular-nums tracking-tight">
-                <AnimatedNumber value={total.kcal} />
-                <span className="ml-1.5 text-base font-bold text-fg/40">/ {Math.round(goals.kcal)} ккал</span>
+          <div className="flex items-center gap-5">
+            <CalorieRing value={total.kcal} goal={goals.kcal} />
+            <div className="min-w-0 flex-1 space-y-3">
+              <div>
+                <div className="eyebrow">{total.kcal > goals.kcal ? 'Перебор' : 'Осталось'}</div>
+                <div className={`text-2xl font-extrabold tabular-nums tracking-tight ${total.kcal > goals.kcal ? 'text-amber-600' : ''}`}>
+                  {Math.round(Math.abs(goals.kcal - total.kcal))} <span className="text-sm font-bold text-fg/40">ккал</span>
+                </div>
+              </div>
+              <div>
+                <div className="eyebrow">Цель</div>
+                <div className="text-lg font-extrabold tabular-nums">
+                  {Math.round(goals.kcal)} <span className="text-sm font-bold text-fg/40">ккал</span>
+                </div>
               </div>
             </div>
-            <div className="text-right text-xs font-bold tabular-nums text-fg/40">
-              {total.kcal > goals.kcal ? (
-                <span className="text-amber-400">перебор {Math.round(total.kcal - goals.kcal)}</span>
-              ) : (
-                <>осталось {Math.round(goals.kcal - total.kcal)}</>
-              )}
-            </div>
-          </div>
-          <div className="h-3 overflow-hidden rounded-full bg-fg/[.06]">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-gold to-gold-strong transition-[width] duration-500"
-              style={{ width: `${Math.min(100, goals.kcal > 0 ? (total.kcal / goals.kcal) * 100 : 0)}%` }}
-            />
           </div>
           <div className="grid gap-3 border-t border-fg/[.06] pt-4">
           <ProgressBar label="Белки" value={total.protein} goal={goals.protein} unit="г" color="var(--color-protein)" />
@@ -128,12 +125,14 @@ export function NutritionPage() {
           </div>
         </Card>
 
+        <WaterCard date={date} index={2} />
+
         {MEALS.map((meal, mi) => {
           const items = entries.filter((e) => e.meal === meal.id);
           const t = sum(items);
           const Icon = MEAL_ICONS[meal.id];
           return (
-            <Card key={meal.id} index={mi + 2} className="overflow-hidden p-0">
+            <Card key={meal.id} index={mi + 3} className="overflow-hidden p-0">
               <div className="flex items-center gap-2 px-4 py-3">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-accent">
                   <Icon size={20} strokeWidth={2.2} />
@@ -148,7 +147,7 @@ export function NutritionPage() {
                 </div>
                 <button
                   onClick={() => setPickerMeal(meal.id)}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-accent text-bg shadow-lift transition-transform active:scale-90"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-accent text-white shadow-lift transition-transform active:scale-90"
                   aria-label={`Добавить в ${meal.label}`}
                 >
                   <Plus size={20} strokeWidth={2.6} />

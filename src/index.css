@@ -2,37 +2,41 @@
 @import "@fontsource-variable/manrope";
 
 /*
- * Тёмная тема на основе тёмно-синего #0b1f4b, текст #f2f2f2, акцент — золото #c9a227.
- * bg — фон страницы, surface — карточки и шторки (на тон светлее фона),
- * fg — текст (оттенки — прозрачностью: text-fg/55, border-fg/10).
- * accent — золото: главные кнопки и активные элементы; текст на нём — тёмно-синий (text-bg).
+ * Палитра: тёмно-синий #0b1f4b + белый/#f2f2f2, золото #c9a227 — редкий акцент.
+ * Тёмно-синие шапки и нижнее меню обрамляют светлый контент (белые карточки на #f2f2f2).
+ * bg — фон, surface — карточки, fg — текст (оттенки — прозрачностью: text-fg/55).
+ * accent — тёмно-синий: главные кнопки и активные элементы, текст на нём белый.
+ * gold — индикаторы, метки, шкалы; текст на золоте — тёмно-синий.
  */
 @theme {
   --font-sans: 'Manrope Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  --color-bg: #0b1f4b;
-  --color-surface: #13295c;
-  --color-fg: #f2f2f2;
+  --color-bg: #f2f2f2;
+  --color-surface: #ffffff;
+  --color-fg: #0b1f4b;
+  --color-navy: #0b1f4b;
+  --color-navy-2: #16306b;
 
-  --color-accent: #c9a227;
-  --color-accent-strong: #ddb948;
-  --color-accent-soft: #2c3b5a;
+  --color-accent: #0b1f4b;
+  --color-accent-strong: #06132f;
+  --color-accent-soft: #e5e9f2;
 
   --color-gold: #c9a227;
-  --color-gold-strong: #ddb948;
-  --color-gold-soft: #3a4456;
+  --color-gold-strong: #a8861c;
+  --color-gold-soft: #f7f0db;
 
-  --color-protein: #f2f2f2;
+  --color-protein: #0b1f4b;
   --color-fat: #c9a227;
-  --color-carbs: #8fa3d1;
+  --color-carbs: #7f93c4;
+  --color-water: #3f7fd6;
 
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px -12px rgb(0 0 0 / 0.45);
-  --shadow-lift: 0 8px 24px -10px rgb(201 162 39 / 0.45);
-  --shadow-gold: 0 8px 22px -8px rgb(201 162 39 / 0.55);
+  --shadow-card: 0 1px 2px rgb(11 31 75 / 0.05), 0 6px 20px -10px rgb(11 31 75 / 0.18);
+  --shadow-lift: 0 10px 24px -10px rgb(11 31 75 / 0.55);
+  --shadow-gold: 0 8px 20px -8px rgb(201 162 39 / 0.6);
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -65,7 +69,7 @@ input[type='number']::-webkit-outer-spin-button {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: rgb(242 242 242 / 0.5);
+  color: rgb(11 31 75 / 0.45);
 }
 
 /* Страница под открытой шторкой не прокручивается (без скачка позиции). */

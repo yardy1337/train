@@ -51,7 +51,7 @@ export function AmountSheet({
             <button
               key={g}
               onClick={() => setGrams(g)}
-              className={`rounded-lg px-3 py-1.5 text-sm ${grams === g ? 'bg-accent text-bg font-bold' : 'bg-fg/[.05] text-fg/75'}`}
+              className={`rounded-lg px-3 py-1.5 text-sm ${grams === g ? 'bg-accent text-white font-bold' : 'bg-fg/[.05] text-fg/75'}`}
             >
               {g}
             </button>

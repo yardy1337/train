@@ -15,6 +15,15 @@ import { useActiveWorkout, useHistory, useProgram } from './hooks';
 import { ActiveWorkout } from './ActiveWorkout';
 import { ProgramEditor } from './ProgramEditor';
 import { WorkoutHistory } from './WorkoutHistory';
+import { WeekStrip } from './WeekStrip';
+
+/** «Доброе утро · понедельник, 10 ноября» */
+function greeting() {
+  const d = new Date();
+  const h = d.getHours();
+  const hello = h < 5 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
+  return `${hello} · ${d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+}
 
 type View = { name: 'home' } | { name: 'program'; id: string } | { name: 'editor' } | { name: 'history' };
 
@@ -108,15 +117,16 @@ function CatalogHome({
     <Screen>
       <PageHeader
         title="Тренировки"
+        subtitle={greeting()}
         right={
-          <IconButton label="История" onClick={onHistory} className="bg-surface text-fg shadow-card">
+          <IconButton label="История" onClick={onHistory} className="bg-white/10 text-white active:bg-white/20">
             <History size={18} />
           </IconButton>
         }
       />
       <div className="space-y-3 px-4 pb-6">
         <Item>
-          <div className="relative overflow-hidden rounded-3xl border border-gold/25 bg-gradient-to-br from-[#1c3a7c] to-surface p-5 text-white shadow-card">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-2 via-navy to-[#071636] p-5 text-white shadow-lift">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/[.06]" />
             <div className="pointer-events-none absolute -bottom-14 right-12 h-32 w-32 rounded-full bg-white/[.07]" />
             <button className="relative block w-full text-left" onClick={() => onOpen(mine.id)}>
@@ -137,7 +147,7 @@ function CatalogHome({
                 </div>
                 <button
                   onClick={() => onStart(next)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2.5 text-sm font-extrabold text-bg shadow-gold transition-transform active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2.5 text-sm font-extrabold text-fg shadow-gold transition-transform active:scale-95"
                 >
                   <Play size={14} fill="currentColor" /> Начать
                 </button>
@@ -146,13 +156,15 @@ function CatalogHome({
           </div>
         </Item>
 
-        <Item index={1} className="flex items-baseline justify-between pt-3">
+        <WeekStrip history={history} plan={mine.daysPerWeek} index={1} />
+
+        <Item index={2} className="flex items-baseline justify-between pt-3">
           <div className="eyebrow">Каталог программ</div>
           <div className="text-xs font-bold text-fg/35">{PROGRAMS.length}</div>
         </Item>
 
         {PROGRAMS.map((p, i) => (
-          <Card key={p.id} index={i + 2} className="p-0">
+          <Card key={p.id} index={i + 3} className="p-0">
             <button className="flex w-full items-center gap-3 p-4 text-left active:bg-fg/[.02]" onClick={() => onOpen(p.id)}>
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent">
                 <Dumbbell size={22} strokeWidth={2.2} />
@@ -161,7 +173,7 @@ function CatalogHome({
                 <div className="flex items-center gap-2">
                   <span className="truncate text-lg font-extrabold tracking-tight">{p.name}</span>
                   {p.id === activeProgramId && (
-                    <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-bg">
+                    <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
                       моя
                     </span>
                   )}
@@ -180,7 +192,7 @@ function CatalogHome({
           </Card>
         ))}
 
-        <Item index={PROGRAMS.length + 2}>
+        <Item index={PROGRAMS.length + 3}>
           <p className="px-2 pt-2 text-center text-xs font-medium text-fg/35">Скоро здесь появятся новые программы</p>
         </Item>
       </div>
@@ -241,7 +253,7 @@ function ProgramPage({
         left={<BackButton onClick={onBack} />}
         right={
           isMine ? (
-            <IconButton label="Редактировать программу" onClick={onEdit} className="bg-surface text-fg shadow-card">
+            <IconButton label="Редактировать программу" onClick={onEdit} className="bg-white/10 text-white active:bg-white/20">
               <SlidersHorizontal size={18} />
             </IconButton>
           ) : undefined
@@ -273,7 +285,7 @@ function ProgramPage({
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-extrabold tracking-tight">{d.name}</h2>
                     {isNext && (
-                      <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-bg">
+                      <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
                         следующая
                       </span>
                     )}
