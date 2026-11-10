@@ -196,3 +196,19 @@ export const DEFAULT_PROGRAM_ID = 'upper-lower';
 export const ACTIVE_PROGRAM_KEY = 'activeProgram';
 
 export const findProgram = (id: string) => PROGRAMS.find((p) => p.id === id) ?? PROGRAMS[0];
+
+const templateCache = new Map<string, ProgramDay[]>();
+/** Дни программы из каталога (кэшируются — шаблоны не меняются). */
+export function templateDays(p: CatalogProgram): ProgramDay[] {
+  let d = templateCache.get(p.id);
+  if (!d) {
+    d = p.days();
+    templateCache.set(p.id, d);
+  }
+  return d;
+}
+
+/** Программа, к которой относится день (по id дня — они уникальны в каталоге). */
+export function programOfDay(dayId: string): CatalogProgram | undefined {
+  return PROGRAMS.find((p) => templateDays(p).some((d) => d.id === dayId));
+}

@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CalendarDays, Check, ChevronRight, Dumbbell, History, Play, SlidersHorizontal, Target } from 'lucide-react';
+import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
-import { useSetting } from '../../db/settings';
+import { setSetting, useSetting } from '../../db/settings';
 import { Button, Card, IconButton, PageHeader, BackButton } from '../../components/ui';
 import { Item, Screen } from '../../components/motion';
-import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, PROGRAMS, findProgram, type CatalogProgram } from '../../data/programs';
+import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, PROGRAMS, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
 import { scrollToTop } from '../../lib/smoothScroll';
 import { createWorkout, formatTarget, nextDayId } from '../../lib/workout';
 import { formatShort } from '../../lib/date';
@@ -25,17 +25,10 @@ function greeting() {
   return `${hello} · ${d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}`;
 }
 
+const PINNED_KEY = 'pinnedProgram';
+
 type View = { name: 'home' } | { name: 'program'; id: string } | { name: 'editor' } | { name: 'history' };
 
-
-/** Заменяет программу пользователя шаблоном из каталога. История тренировок не трогается. */
-async function applyProgram(p: CatalogProgram) {
-  await db.transaction('rw', db.programDays, db.settings, async () => {
-    await db.programDays.clear();
-    await db.programDays.bulkAdd(p.days());
-    await db.settings.put({ key: ACTIVE_PROGRAM_KEY, value: p.id });
-  });
-}
 
 export function WorkoutsPage() {
   const [view, setView] = useState<View>({ name: 'home' });
@@ -48,6 +41,19 @@ export function WorkoutsPage() {
     await db.workouts.add(createWorkout(day, history));
   };
 
+  // Редактируемая программа (с вашими правками) хранится в базе, остальные — шаблоны каталога.
+  const daysOf = (p: CatalogProgram) => (p.id === activeProgramId ? days : templateDays(p));
+  // «Моя программа» — та, по которой была последняя тренировка.
+  const lastDayId = history[0]?.dayId;
+  const lastUsedId =
+    !lastDayId || days.some((d) => d.id === lastDayId) ? activeProgramId : programOfDay(lastDayId)?.id ?? activeProgramId;
+  // Закреплённая программа всегда сверху; иначе — та, по которой была последняя тренировка.
+  // По умолчанию закреплена «Верх / Низ»; если пользователь открепит — сохранится null.
+  const pinnedRaw = useSetting<string | null>(PINNED_KEY, DEFAULT_PROGRAM_ID);
+  const pinnedId = pinnedRaw && PROGRAMS.some((p) => p.id === pinnedRaw) ? pinnedRaw : null;
+  const currentId = pinnedId ?? lastUsedId;
+  const togglePin = (id: string) => setSetting(PINNED_KEY, pinnedId === id ? null : id);
+
   let content: ReactNode = null;
   if (view.name === 'editor')
     content = <ProgramEditor key="editor" onBack={() => setView({ name: 'program', id: activeProgramId })} />;
@@ -58,25 +64,25 @@ export function WorkoutsPage() {
       <ProgramPage
         key={`program-${view.id}`}
         program={findProgram(view.id)}
-        isMine={view.id === activeProgramId}
-        days={days}
+        isCurrent={view.id === currentId}
+        pinned={view.id === pinnedId}
+        onTogglePin={() => togglePin(view.id)}
+        canEdit={view.id === activeProgramId}
+        days={daysOf(findProgram(view.id))}
         history={history}
         onBack={() => setView({ name: 'home' })}
         onEdit={() => setView({ name: 'editor' })}
         onStart={start}
-        onChoose={async (p) => {
-          await applyProgram(p);
-          setView({ name: 'program', id: p.id });
-        }}
       />
     );
   else if (active === null)
     content = (
       <CatalogHome
         key="home"
-        days={days}
+        days={daysOf(findProgram(currentId))}
         history={history}
-        activeProgramId={activeProgramId}
+        activeProgramId={currentId}
+        pinnedId={pinnedId}
         onOpen={(id) => setView({ name: 'program', id })}
         onHistory={() => setView({ name: 'history' })}
         onStart={start}
@@ -98,6 +104,7 @@ function CatalogHome({
   days,
   history,
   activeProgramId,
+  pinnedId,
   onOpen,
   onHistory,
   onStart,
@@ -105,12 +112,13 @@ function CatalogHome({
   days: ProgramDay[];
   history: Workout[];
   activeProgramId: string;
+  pinnedId: string | null;
   onOpen: (id: string) => void;
   onHistory: () => void;
   onStart: (d: ProgramDay) => void;
 }) {
   const mine = findProgram(activeProgramId);
-  const nextId = nextDayId(days, history);
+  const nextId = nextDayId(days, history.filter((w) => days.some((d) => d.id === w.dayId)));
   const next = days.find((d) => d.id === nextId);
 
   return (
@@ -130,7 +138,10 @@ function CatalogHome({
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/[.06]" />
             <div className="pointer-events-none absolute -bottom-14 right-12 h-32 w-32 rounded-full bg-white/[.07]" />
             <button className="relative block w-full text-left" onClick={() => onOpen(mine.id)}>
-              <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-gold">Моя программа</div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-gold">
+                {pinnedId === mine.id && <Pin size={12} strokeWidth={2.6} />}
+                {pinnedId === mine.id ? 'Закреплённая программа' : 'Моя программа'}
+              </div>
               <div className="mt-1 flex items-center gap-1 text-3xl font-extrabold tracking-tight">
                 {mine.name}
                 <ChevronRight size={26} strokeWidth={2.6} className="opacity-70" />
@@ -163,7 +174,7 @@ function CatalogHome({
           <div className="text-xs font-bold text-fg/35">{PROGRAMS.length}</div>
         </Item>
 
-        {PROGRAMS.map((p, i) => (
+        {[...PROGRAMS].sort((a, b) => Number(b.id === pinnedId) - Number(a.id === pinnedId)).map((p, i) => (
           <Card key={p.id} index={i + 3} className="p-0">
             <button className="flex w-full items-center gap-3 p-4 text-left active:bg-fg/[.02]" onClick={() => onOpen(p.id)}>
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent">
@@ -172,10 +183,16 @@ function CatalogHome({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-lg font-extrabold tracking-tight">{p.name}</span>
-                  {p.id === activeProgramId && (
-                    <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
-                      моя
+                  {p.id === pinnedId ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
+                      <Pin size={10} strokeWidth={3} /> закреплена
                     </span>
+                  ) : (
+                    p.id === activeProgramId && (
+                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
+                        моя
+                      </span>
+                    )
                   )}
                 </div>
                 <div className="mt-0.5 truncate text-sm font-semibold text-fg/50">{p.tagline}</div>
@@ -208,43 +225,32 @@ function Chip({ children }: { children: ReactNode }) {
 
 function ProgramPage({
   program,
-  isMine,
+  isCurrent,
+  canEdit,
+  pinned,
+  onTogglePin,
   days,
   history,
   onBack,
   onEdit,
   onStart,
-  onChoose,
 }: {
   program: CatalogProgram;
-  isMine: boolean;
+  /** По этой программе была последняя тренировка. */
+  isCurrent: boolean;
+  /** Это ваша редактируемая программа (правки хранятся в базе). */
+  canEdit: boolean;
+  pinned: boolean;
+  onTogglePin: () => void;
   days: ProgramDay[];
   history: Workout[];
   onBack: () => void;
   onEdit: () => void;
   onStart: (d: ProgramDay) => void;
-  onChoose: (p: CatalogProgram) => Promise<void>;
 }) {
-  const [busy, setBusy] = useState(false);
-  // Своя программа — из базы (с правками пользователя), чужая — шаблон из каталога.
-  const shownDays = isMine ? days : program.days();
-  const nextId = isMine ? nextDayId(days, history) : undefined;
-  const lastByDay = (id: string) => history.find((w) => w.dayId === id);
-
-  const choose = async () => {
-    if (
-      !confirm(
-        `Заниматься по программе «${program.name}»?\n\nТекущая программа (вместе с вашими правками) будет заменена. История тренировок сохранится.`,
-      )
-    )
-      return;
-    setBusy(true);
-    try {
-      await onChoose(program);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const own = history.filter((w) => days.some((d) => d.id === w.dayId));
+  const nextId = nextDayId(days, own);
+  const lastByDay = (id: string) => own.find((w) => w.dayId === id);
 
   return (
     <Screen kind="push">
@@ -252,14 +258,24 @@ function ProgramPage({
         title={program.name}
         left={<BackButton onClick={onBack} />}
         right={
-          isMine ? (
-            <IconButton label="Редактировать программу" onClick={onEdit} className="bg-white/10 text-white active:bg-white/20">
-              <SlidersHorizontal size={18} />
+          <div className="flex gap-1">
+            <IconButton
+              label={pinned ? 'Открепить программу' : 'Закрепить программу'}
+              onClick={onTogglePin}
+              aria-pressed={pinned}
+              className={pinned ? 'bg-gold text-navy active:bg-gold-strong' : 'bg-white/10 text-white active:bg-white/20'}
+            >
+              {pinned ? <PinOff size={18} /> : <Pin size={18} />}
             </IconButton>
-          ) : undefined
+            {canEdit && (
+              <IconButton label="Редактировать программу" onClick={onEdit} className="bg-white/10 text-white active:bg-white/20">
+                <SlidersHorizontal size={18} />
+              </IconButton>
+            )}
+          </div>
         }
       />
-      <div className={`space-y-3 px-4 ${isMine ? 'pb-6' : 'pb-28'}`}>
+      <div className="space-y-3 px-4 pb-6">
         <Card index={0} className="space-y-3">
           <p className="text-sm font-medium leading-relaxed text-fg/70">{program.description}</p>
           <div className="grid grid-cols-3 gap-2">
@@ -268,16 +284,16 @@ function ProgramPage({
             <Stat icon={<Dumbbell size={16} />} label="Уровень" value={program.level} />
           </div>
           <div className="text-xs font-semibold text-fg/45">Инвентарь: {program.equipment}</div>
-          {isMine && (
+          {isCurrent && (
             <div className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent-strong">
               <Check size={14} strokeWidth={3} /> Вы занимаетесь по этой программе
             </div>
           )}
         </Card>
 
-        {shownDays.map((d, i) => {
+        {days.map((d, i) => {
           const isNext = d.id === nextId;
-          const last = isMine ? lastByDay(d.id) : undefined;
+          const last = lastByDay(d.id);
           return (
             <Card key={d.id} index={i + 1} className={isNext ? 'border-gold/60 ring-4 ring-gold/15' : ''}>
               <div className="flex items-start gap-2">
@@ -295,11 +311,9 @@ function ProgramPage({
                     {last && <span className="text-fg/45"> · была {formatShort(last.date)}</span>}
                   </div>
                 </div>
-                {isMine && (
                   <Button variant={isNext ? 'primary' : 'secondary'} onClick={() => onStart(d)}>
                     <Play size={14} fill="currentColor" /> Начать
                   </Button>
-                )}
               </div>
               <ul className="mt-3 space-y-1.5 border-t border-fg/[.06] pt-3 text-sm">
                 {d.exercises.map((e) => (
@@ -317,15 +331,6 @@ function ProgramPage({
         })}
       </div>
 
-      {!isMine && (
-        <div className="pb-safe fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 px-4 pb-3">
-          <div className="mx-auto max-w-lg">
-            <Button variant="primary" className="w-full py-3.5 text-base" disabled={busy} onClick={choose}>
-              Заниматься по этой программе
-            </Button>
-          </div>
-        </div>
-      )}
     </Screen>
   );
 }
