@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
 import { scrollToTop } from './lib/smoothScroll';
+import { markBooted } from './components/motion';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { RestTimerProvider } from './components/RestTimer';
 import { WorkoutsPage } from './features/workouts/WorkoutsPage';
@@ -22,6 +23,9 @@ function readTab(): Tab {
 
 export default function App() {
   const [tab, setTab] = useState<Tab>(readTab);
+
+  // Первый экран без анимации появления; дальше — обычные переходы.
+  useEffect(() => markBooted(), []);
 
   useEffect(() => {
     try {

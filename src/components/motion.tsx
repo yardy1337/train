@@ -7,13 +7,24 @@ export const EASE = [0.22, 1, 0.36, 1] as const;
 
 export const spring: Transition = { type: 'spring', damping: 30, stiffness: 320, mass: 0.8 };
 
-/** Карточки и элементы списков: появляются снизу с лёгким затуханием. */
+/**
+ * Запуск приложения: первый экран показываем сразу, без анимации появления.
+ * На iPhone текст во время анимации рисуется «картинкой» и выглядит жирнее,
+ * а после неё резко становится обычным — на старте это заметно.
+ */
+let booted = false;
+export function markBooted() {
+  setTimeout(() => (booted = true), 600);
+}
+/** initial для анимаций появления: на старте — сразу финальное состояние. */
+export const appear = (state: string) => (booted ? state : false);
+
+/** Карточки и элементы списков: появляются снизу с лёгким затуханием (без масштаба — он портит текст). */
 export const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 14, scale: 0.985 },
+  hidden: { opacity: 0, y: 14 },
   show: (i: number = 0) => ({
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: { duration: 0.42, ease: EASE, delay: 0.05 + Math.min(i, 8) * 0.045 },
   }),
 };
@@ -37,7 +48,7 @@ export function Screen({ children, kind = 'fade' }: { children: ReactNode; kind?
   const inLayer = useInStackLayer();
   if (inLayer) return <div>{children}</div>;
   return (
-    <motion.div variants={screenVariants[kind]} initial="hidden" animate="show" exit="exit">
+    <motion.div variants={screenVariants[kind]} initial={appear('hidden')} animate="show" exit="exit">
       {children}
     </motion.div>
   );
@@ -46,7 +57,7 @@ export function Screen({ children, kind = 'fade' }: { children: ReactNode; kind?
 /** Произвольный элемент, участвующий в «лесенке» появления. */
 export function Item({ children, className, index = 0 }: { children: ReactNode; className?: string; index?: number }) {
   return (
-    <motion.div variants={itemVariants} initial="hidden" animate="show" custom={index} className={className}>
+    <motion.div variants={itemVariants} initial={appear('hidden')} animate="show" custom={index} className={className}>
       {children}
     </motion.div>
   );

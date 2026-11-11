@@ -2,7 +2,7 @@ import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from '
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, X } from 'lucide-react';
 import { parseNum } from '../lib/format';
-import { itemVariants, spring } from './motion';
+import { appear, itemVariants, spring } from './motion';
 import { lockScroll } from '../lib/smoothScroll';
 import { useBackEntry } from '../lib/backNav';
 
@@ -65,7 +65,7 @@ export function Card({
   return (
     <motion.div
       variants={itemVariants}
-      initial="hidden"
+      initial={appear('hidden')}
       animate="show"
       custom={index}
       layout={layout}
