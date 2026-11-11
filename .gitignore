@@ -4,3 +4,4 @@ dev-dist
 *.local
 server/node_modules
 server/.wrangler
+*.tsbuildinfo
