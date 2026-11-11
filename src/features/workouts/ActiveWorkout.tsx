@@ -18,7 +18,7 @@ import { fmtKg, isBarbell, suggestWeight, warmupSets } from '../../lib/training'
 import { useFeature } from '../../lib/features';
 import { PlateSheet } from './PlateSheet';
 import { BounceTrophy, DrawCheck } from '../../components/LiveIcons';
-import { TechniqueSheet, hasTechnique } from './TechniqueSheet';
+import { TechniqueSheet, useHasTechnique } from './TechniqueSheet';
 
 export function ActiveWorkout({ initial, history }: { initial: Workout; history: Workout[] }) {
   const [w, setW] = useState<Workout>(initial);
@@ -84,6 +84,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
   const featWarmup = useFeature('warmup');
   const [plateFor, setPlateFor] = useState<number | null | undefined>(undefined);
   const [techFor, setTechFor] = useState<string | null>(null);
+  const hasTechnique = useHasTechnique();
 
   const toggleDone = (i: number, si: number) => {
     const ex = w.exercises[i];

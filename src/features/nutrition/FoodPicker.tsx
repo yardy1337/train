@@ -53,7 +53,8 @@ export function FoodPicker({
   const [cat, setCat] = useState<string | null>(null);
 
   // База читается только когда окно открыто — закрытое окно ничего не грузит.
-  const foods = useLiveQuery(() => (open ? db.foods.toArray() : EMPTY), [open], EMPTY);
+  const foods = useLiveQuery(() => (open ? db.foods.filter((f) => !f.hidden).toArray() : EMPTY), [open], EMPTY);
+  const admin = useFeature('admin');
 
   useEffect(() => {
     if (!open) {
@@ -246,7 +247,7 @@ export function FoodPicker({
                 key={f.id}
                 food={f}
                 onPick={onPick}
-                onEdit={f.source === 'custom' || f.source === 'recipe' ? editHandler : undefined}
+                onEdit={admin || f.source === 'custom' || f.source === 'recipe' ? editHandler : undefined}
               />
             ))}
           </ul>

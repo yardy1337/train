@@ -45,8 +45,10 @@ export function CustomFoodSheet({
     const f: Food = {
       ...(food ?? {}),
       id: food?.id ?? `c:${uid()}`,
-      source: 'custom',
-      category: 'Мои продукты',
+      // Правка встроенного продукта (режим редактора) — остаётся в своей категории.
+      source: food?.source ?? 'custom',
+      category: food?.category ?? 'Мои продукты',
+      ...(food && food.source !== 'custom' ? { edited: 1 as const } : {}),
       name: d.name.trim(),
       brand: d.brand.trim() || undefined,
       barcode: d.barcode.trim() || undefined,
@@ -63,7 +65,9 @@ export function CustomFoodSheet({
 
   const remove = async () => {
     if (food && confirm(`Удалить «${food.name}»? Записи в дневнике останутся.`)) {
-      await db.foods.delete(food.id);
+      // Свои продукты удаляем, встроенные — прячем (иначе вернутся при обновлении базы).
+      if (food.source === 'custom') await db.foods.delete(food.id);
+      else await db.foods.update(food.id, { hidden: 1, edited: 1 });
       onClose();
     }
   };

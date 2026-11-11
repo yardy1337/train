@@ -223,15 +223,49 @@ let custom: CatalogProgram[] = [];
 export function registerCustomPrograms(list: CatalogProgram[]) {
   custom = list;
 }
-/** Каталог целиком: встроенные программы, затем свои. */
-export const allPrograms = () => [...PROGRAMS, ...custom];
 
-export const findProgram = (id: string) => allPrograms().find((p) => p.id === id) ?? PROGRAMS[0];
+/** Правки администратора (режим редактора) поверх встроенных программ. Хранятся на телефоне. */
+export interface ProgramOverride {
+  hidden?: boolean;
+  name?: string;
+  tagline?: string;
+  description?: string;
+  goal?: string;
+  level?: CatalogProgram['level'];
+  daysPerWeek?: number;
+  equipment?: string;
+  days?: ProgramDay[];
+}
+let overrides: Record<string, ProgramOverride> = {};
+export function registerProgramOverrides(o: Record<string, ProgramOverride>) {
+  overrides = o;
+}
+export const overrideOf = (id: string): ProgramOverride | undefined => overrides[id];
+
+function withOverride(p: CatalogProgram): CatalogProgram {
+  const o = overrides[p.id];
+  if (!o) return p;
+  const { hidden: _h, days, ...fields } = o;
+  void _h;
+  const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined && v !== ''));
+  return { ...p, ...clean, days: days ? () => days : p.days };
+}
+
+/** Каталог: встроенные программы (с правками), затем свои. Скрытые — только с includeHidden. */
+export const allPrograms = (includeHidden = false) =>
+  [...PROGRAMS.map(withOverride), ...custom].filter((p) => includeHidden || !overrides[p.id]?.hidden);
+
+/** Исходная программа из каталога — без правок. */
+export const originalProgram = (id: string) => PROGRAMS.find((p) => p.id === id);
+
+export const findProgram = (id: string) => allPrograms(true).find((p) => p.id === id) ?? allPrograms()[0] ?? PROGRAMS[0];
 
 const templateCache = new Map<string, ProgramDay[]>();
 /** Дни программы из каталога (кэшируются — шаблоны не меняются; свои — всегда свежие). */
 export function templateDays(p: CatalogProgram): ProgramDay[] {
   if (p.custom) return p.days();
+  const o = overrides[p.id]?.days;
+  if (o) return o;
   let d = templateCache.get(p.id);
   if (!d) {
     d = p.days();
@@ -242,5 +276,5 @@ export function templateDays(p: CatalogProgram): ProgramDay[] {
 
 /** Программа, к которой относится день (по id дня — они уникальны в каталоге). */
 export function programOfDay(dayId: string): CatalogProgram | undefined {
-  return allPrograms().find((p) => templateDays(p).some((d) => d.id === dayId));
+  return allPrograms(true).find((p) => templateDays(p).some((d) => d.id === dayId));
 }

@@ -79,6 +79,10 @@ export interface Food extends Macros {
   ingredients?: RecipeIngredient[];
   /** Вес готового блюда (г), если отличается от суммы ингредиентов. */
   totalWeight?: number;
+  /** Встроенный продукт изменён в режиме редактора — не перезаписывать при обновлении базы. */
+  edited?: 1;
+  /** Удалён в режиме редактора (встроенные не удаляем совсем, а прячем). */
+  hidden?: 1;
 }
 
 export type MealType = 'breakfast' | 'snack' | 'lunch' | 'postworkout' | 'dinner';

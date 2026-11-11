@@ -31,7 +31,12 @@ export async function initDb() {
       const existing = await db.foods.bulkGet(foods.map((f) => f.id));
       // Сохраняем пользовательские отметки (избранное, недавние) при обновлении базы.
       await db.foods.bulkPut(
-        foods.map((f, i) => ({ ...f, favorite: existing[i]?.favorite, lastUsed: existing[i]?.lastUsed })),
+        foods.map((f, i) => {
+          const e = existing[i];
+          // Продукт, изменённый или удалённый в режиме редактора, оставляем как есть.
+          if (e?.edited) return e;
+          return { ...f, favorite: e?.favorite, lastUsed: e?.lastUsed };
+        }),
       );
       await db.settings.put({ key: 'foodsSeedVersion', value: FOODS_SEED_VERSION });
     }

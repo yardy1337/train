@@ -302,7 +302,21 @@ for (const [k, v] of Object.entries(ALIAS)) {
   if (t) MAP.set(normName(k), t);
 }
 
+/** Правки из режима редактора (хранятся на телефоне), ключ — нормализованное название. */
+let edits: Record<string, Technique> = {};
+export function registerTechniqueEdits(e: Record<string, Technique>) {
+  edits = e;
+}
+
 export function techniqueOf(name: string): Technique | null {
+  const k = normName(name);
+  if (edits[k]) return edits[k].steps.length || edits[k].mistakes.length ? edits[k] : null;
+  const t = MAP.get(k);
+  return t ? { steps: t[0], mistakes: t[1] } : null;
+}
+
+/** Исходная техника из приложения (без правок). */
+export function originalTechnique(name: string): Technique | null {
   const t = MAP.get(normName(name));
   return t ? { steps: t[0], mistakes: t[1] } : null;
 }

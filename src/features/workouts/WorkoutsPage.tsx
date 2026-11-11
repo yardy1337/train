@@ -9,7 +9,10 @@ import { Item, Screen } from '../../components/motion';
 import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, allPrograms, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
 import { createCustomProgram, customDayStore, deleteCustomProgram, newDay, patchCustomProgram, useCustomPrograms } from '../../data/customPrograms';
 import { CustomProgramSheet } from './CustomProgramSheet';
-import { TechniqueSheet, hasTechnique } from './TechniqueSheet';
+import { ProgramInfoSheet } from './ProgramInfoSheet';
+import { overrideDayStore, patchOverride, resetOverride, useProgramOverrides } from '../../data/programOverrides';
+import { useFeature } from '../../lib/features';
+import { TechniqueSheet, useHasTechnique } from './TechniqueSheet';
 import { shareImage, workoutCard } from '../../lib/shareCard';
 import { BounceTrophy } from '../../components/LiveIcons';
 import { scrollToTop } from '../../lib/smoothScroll';
@@ -47,6 +50,9 @@ export function WorkoutsPage() {
   const activeProgramId = useSetting<string>(ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID);
   // Свои программы пользователя — регистрируются в каталоге до любых поисков по нему.
   const customs = useCustomPrograms();
+  useProgramOverrides();
+  const admin = useFeature('admin');
+  const [infoFor, setInfoFor] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
 
@@ -85,7 +91,7 @@ export function WorkoutsPage() {
           isCurrent={pid === currentId}
           pinned={pid === pinnedId}
           onTogglePin={() => togglePin(pid)}
-          canEdit={pid === activeProgramId || !!program.custom}
+          canEdit={pid === activeProgramId || !!program.custom || admin}
           days={daysOf(program)}
           history={history}
           onBack={() => setView({ name: 'home' })}
@@ -113,7 +119,11 @@ export function WorkoutsPage() {
           }
         />
       ) : (
-        <ProgramEditor onBack={back} />
+        <ProgramEditor
+          onBack={back}
+          {...(view.id === activeProgramId ? {} : { days: templateDays(findProgram(view.id)), store: overrideDayStore(view.id) })}
+          extra={admin ? <AdminProgramTools id={view.id} onInfo={() => setInfoFor(view.id)} onHidden={() => setView({ name: 'home' })} /> : undefined}
+        />
       ),
     });
   }
@@ -146,6 +156,7 @@ export function WorkoutsPage() {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      <ProgramInfoSheet program={infoFor ? findProgram(infoFor) : null} onClose={() => setInfoFor(null)} />
       <CustomProgramSheet
         open={creating}
         onClose={() => setCreating(false)}
@@ -382,6 +393,7 @@ function ProgramPage({
   onStart: (d: ProgramDay) => void;
 }) {
   const [tech, setTech] = useState<string | null>(null);
+  const hasTechnique = useHasTechnique();
   const own = history.filter((w) => days.some((d) => d.id === w.dayId));
   const nextId = nextDayId(days, own);
   const lastByDay = (id: string) => own.find((w) => w.dayId === id);
@@ -498,5 +510,32 @@ function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: s
       </div>
       <div className="mt-0.5 text-sm font-extrabold leading-tight">{value}</div>
     </div>
+  );
+}
+
+/** Режим редактора: описание, скрыть, вернуть как было — для встроенной программы. */
+function AdminProgramTools({ id, onInfo, onHidden }: { id: string; onInfo: () => void; onHidden: () => void }) {
+  const name = findProgram(id).name;
+  return (
+    <Card className="space-y-2">
+      <div className="eyebrow">Режим редактора</div>
+      <Button className="w-full" onClick={onInfo}>
+        Название и описание
+      </Button>
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          onClick={async () => {
+            if (!confirm(`Скрыть программу «${name}» из каталога? Вернуть можно в настройках.`)) return;
+            onHidden();
+            await patchOverride(id, { hidden: true });
+          }}
+        >
+          Скрыть
+        </Button>
+        <Button variant="danger" onClick={() => confirm(`Вернуть «${name}» к исходному виду? Ваши правки этой программы пропадут.`) && resetOverride(id)}>
+          Как было
+        </Button>
+      </div>
+    </Card>
   );
 }
