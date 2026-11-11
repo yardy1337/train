@@ -5,6 +5,7 @@ import App from './App';
 import { initDb } from './db/init';
 import './index.css';
 import { initSmoothScroll } from './lib/smoothScroll';
+import { installEdgeSwipe } from './lib/backNav';
 import cyrillicFont from '@fontsource-variable/manrope/files/manrope-cyrillic-wght-normal.woff2?url';
 import latinFont from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
 
@@ -33,6 +34,7 @@ function fontsReady() {
 }
 
 initSmoothScroll();
+installEdgeSwipe();
 
 // Сервис-воркер: офлайн-работа и автообновление.
 registerSW({ immediate: true });

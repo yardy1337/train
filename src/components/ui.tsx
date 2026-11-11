@@ -4,6 +4,7 @@ import { ChevronLeft, X } from 'lucide-react';
 import { parseNum } from '../lib/format';
 import { itemVariants, spring } from './motion';
 import { lockScroll } from '../lib/smoothScroll';
+import { useBackEntry } from '../lib/backNav';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold';
 
@@ -185,6 +186,8 @@ export function Sheet({
   lazy?: boolean;
 }) {
   const [ready, setReady] = useState(!lazy);
+  // Системный «назад» / свайп закрывает шторку.
+  useBackEntry(open, onClose);
   useEffect(() => {
     if (!open) {
       setReady(!lazy);

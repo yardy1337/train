@@ -83,3 +83,26 @@ html.scroll-locked body {
   content-visibility: auto;
   contain-intrinsic-size: auto 64px;
 }
+
+/* Стрелка жеста «назад» от левого края (установленное приложение). */
+.swipe-back-indicator {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: var(--color-navy);
+  color: #fff;
+  box-shadow: var(--shadow-lift);
+  opacity: 0;
+  transform: translate(-40px, -50%);
+  pointer-events: none;
+}
+.swipe-back-indicator.ready {
+  background: var(--color-gold);
+  color: var(--color-navy);
+}

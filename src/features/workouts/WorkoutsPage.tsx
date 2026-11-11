@@ -7,6 +7,7 @@ import { Button, Card, IconButton, PageHeader, BackButton } from '../../componen
 import { Item, Screen } from '../../components/motion';
 import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, PROGRAMS, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
 import { scrollToTop } from '../../lib/smoothScroll';
+import { useBackEntry } from '../../lib/backNav';
 import { createWorkout, formatTarget, nextDayId } from '../../lib/workout';
 import { formatShort } from '../../lib/date';
 import { pluralRu } from '../../lib/format';
@@ -36,6 +37,10 @@ export function WorkoutsPage() {
   const history = useHistory();
   const active = useActiveWorkout();
   const activeProgramId = useSetting<string>(ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID);
+
+  // Свайп / системный «назад»: из редактора — на страницу программы, с остальных экранов — на главный.
+  useBackEntry(view.name !== 'home', () => setView({ name: 'home' }));
+  useBackEntry(view.name === 'editor', () => setView({ name: 'program', id: activeProgramId }));
 
   const start = async (day: ProgramDay) => {
     await db.workouts.add(createWorkout(day, history));

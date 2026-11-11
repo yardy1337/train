@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useBackEntry } from '../../lib/backNav';
 import { scrollToTop } from '../../lib/smoothScroll';
 import { AnimatePresence, motion } from 'motion/react';
 import { EASE, Screen } from '../../components/motion';
@@ -25,6 +26,7 @@ const EMPTY: MealEntry[] = [];
 export function NutritionPage() {
   const [date, setDate] = useState(todayISO());
   const [view, setView] = useState<'day' | 'history'>('day');
+  useBackEntry(view === 'history', () => setView('day'));
   const [pickerMeal, setPickerMeal] = useState<MealType | null>(null);
   const [lastMeal, setLastMeal] = useState<MealType>('breakfast');
   const [picked, setPicked] = useState<Food | null>(null);
