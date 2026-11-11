@@ -5,10 +5,12 @@
  * GET  /api/foods/barcode/:code   — из базы, а если нет — из Open Food Facts (и сохраняем)
  * POST /api/foods                 — добавить продукт (сразу в общую базу, без модерации)
  * GET  /api/foods/stats
+ * POST /api/foods/photo           — распознать еду на фото (Workers AI), примерные граммы и КБЖУ
  */
 
 export interface Env {
   DB: D1Database;
+  AI: Ai;
   ALLOWED_ORIGINS: string;
 }
 
@@ -28,6 +30,8 @@ interface Row {
 
 const OFF_UA = 'MoyTrener/1.0 (https://github.com/yardy1337/train)';
 const POSTS_PER_HOUR = 30;
+const PHOTOS_PER_HOUR = 20;
+const VISION_MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct';
 
 export const norm = (s: string) =>
   s
@@ -204,6 +208,85 @@ async function addProduct(req: Request, env: Env) {
   return json({ product, existed: false }, req, env, 201);
 }
 
+const PHOTO_PROMPT = `Ты нутрициолог. На фото — еда. Определи каждое блюдо или продукт на фото, оцени вес порции в граммах и КБЖУ ВСЕЙ порции.
+Ответь ТОЛЬКО JSON без пояснений, по-русски:
+{"items":[{"name":"гречка отварная","grams":200,"kcal":220,"protein":8,"fat":2,"carbs":42}]}
+Если еды на фото нет — {"items":[]}. Названия короткие, как в дневнике питания.`;
+
+interface PhotoItem {
+  name: string;
+  grams: number;
+  kcal: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+}
+
+function parseItems(raw: unknown): PhotoItem[] {
+  let data: unknown = raw;
+  if (typeof raw === 'string') {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) return [];
+    try {
+      data = JSON.parse(m[0]);
+    } catch {
+      return [];
+    }
+  }
+  const items = (data as { items?: unknown })?.items;
+  if (!Array.isArray(items)) return [];
+  const out: PhotoItem[] = [];
+  for (const it of items.slice(0, 8)) {
+    const o = it as Record<string, unknown>;
+    const name = String(o.name ?? '').trim().slice(0, 80);
+    const grams = num(o.grams);
+    const v = { kcal: num(o.kcal), protein: num(o.protein), fat: num(o.fat), carbs: num(o.carbs) };
+    if (name.length < 2 || !(grams > 0 && grams <= 3000)) continue;
+    if (![v.kcal, v.protein, v.fat, v.carbs].every((x) => Number.isFinite(x) && x >= 0)) continue;
+    // На 100 г — так продукт ложится в дневник; отсекаем явный бред.
+    const k = 100 / grams;
+    const per100 = { kcal: Math.round(v.kcal * k), protein: Math.round(v.protein * k * 10) / 10, fat: Math.round(v.fat * k * 10) / 10, carbs: Math.round(v.carbs * k * 10) / 10 };
+    if (per100.kcal > 950 || per100.protein + per100.fat + per100.carbs > 105) continue;
+    out.push({ name, grams: Math.round(grams), ...per100 });
+  }
+  return out;
+}
+
+async function recognizePhoto(req: Request, env: Env) {
+  let body: { image?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: 'Некорректный запрос' }, req, env, 400);
+  }
+  const image = String(body.image ?? '');
+  if (!/^data:image\/(jpeg|png|webp);base64,/.test(image) || image.length > 1_500_000) {
+    return json({ error: 'Фото слишком большое или в неверном формате' }, req, env, 400);
+  }
+  const key = `photo:${await clientKey(req)}`;
+  const now = Math.floor(Date.now() / 1000);
+  const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM post_log WHERE ip = ?1 AND ts > ?2').bind(key, now - 3600).first<{ n: number }>();
+  if ((recent?.n ?? 0) >= PHOTOS_PER_HOUR) return json({ error: 'Слишком много фото за час, попробуйте позже' }, req, env, 429);
+  await env.DB.prepare('INSERT INTO post_log (ip, ts) VALUES (?1, ?2)').bind(key, now).run();
+
+  const res = (await env.AI.run(VISION_MODEL as Parameters<Ai['run']>[0], {
+    messages: [
+      { role: 'system', content: PHOTO_PROMPT },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Что на фото? Верни JSON.' },
+          { type: 'image_url', image_url: { url: image } },
+        ],
+      },
+    ],
+    max_tokens: 700,
+    temperature: 0.2,
+  } as never)) as { response?: unknown };
+  const items = parseItems(res?.response);
+  return json({ items }, req, env);
+}
+
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
@@ -224,6 +307,7 @@ export default {
       }
 
       if (req.method === 'POST' && url.pathname === '/api/foods') return addProduct(req, env);
+      if (req.method === 'POST' && url.pathname === '/api/foods/photo') return recognizePhoto(req, env);
 
       if (req.method === 'GET' && url.pathname === '/api/foods/stats') {
         const { results } = await env.DB.prepare('SELECT source, COUNT(*) AS n FROM products GROUP BY source').all<{ source: string; n: number }>();

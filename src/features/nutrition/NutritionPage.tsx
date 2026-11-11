@@ -201,6 +201,18 @@ export function NutritionPage() {
         open={pickerMeal !== null}
         onClose={() => setPickerMeal(null)}
         onPick={(f) => setPicked(f)}
+        meal={pickerMeal ?? lastMeal}
+        onPhotoAdd={async (items, m) => {
+          // Блюда с фото пишем прямо в дневник: КБЖУ на 100 г уже посчитаны нейросетью.
+          await db.meals.bulkAdd(
+            items.map((it, i) => ({
+              ...makeEntry({ id: `photo:${it.name}`, name: it.name, source: 'custom', kcal: it.kcal, protein: it.protein, fat: it.fat, carbs: it.carbs }, it.grams, date, m),
+              createdAt: Date.now() + i,
+            })),
+          );
+          setLastMeal(m);
+          setPickerMeal(null);
+        }}
       />
       <AmountSheet
         open={!!picked}

@@ -1,5 +1,5 @@
-import { ChevronLeft, Loader2, Plus, ScanBarcode } from 'lucide-react';
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { Camera, ChevronLeft, Loader2, Plus, ScanBarcode } from 'lucide-react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { Button, Empty, Segmented, Sheet, TextInput } from '../../components/ui';
@@ -7,7 +7,9 @@ import { searchFoods } from '../../lib/nutrition';
 import { getByBarcode } from '../../lib/openFoodFacts';
 import { barcodeCloud, searchCloud } from '../../lib/foodApi';
 import { cacheFoods, findByBarcode } from '../../lib/foods';
-import type { Food } from '../../types';
+import type { Food, MealType } from '../../types';
+import type { PhotoItem } from '../../lib/foodApi';
+import { PhotoSheet } from './PhotoSheet';
 import { FoodRow } from './FoodRow';
 import { BarcodeScanner } from './BarcodeScanner';
 import { CustomFoodSheet } from './CustomFoodSheet';
@@ -25,13 +27,21 @@ export function FoodPicker({
   onPick,
   title = 'Добавить продукт',
   allowRecipes = true,
+  meal = 'breakfast',
+  onPhotoAdd,
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (f: Food) => void;
   title?: string;
   allowRecipes?: boolean;
+  /** Приём пищи по умолчанию — для добавления по фото. */
+  meal?: MealType;
+  /** Если задано — доступна кнопка «Еда по фото». */
+  onPhotoAdd?: (items: PhotoItem[], meal: MealType) => Promise<void>;
 }) {
+  const [photo, setPhoto] = useState<File | null>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>('search');
   const [q, setQ] = useState('');
   const [scan, setScan] = useState(false);
@@ -168,6 +178,11 @@ export function FoodPicker({
                 if (tab !== 'search') setTab('search');
               }}
             />
+            {onPhotoAdd && (
+              <Button onClick={() => photoRef.current?.click()} aria-label="Еда по фото" className="px-3">
+                <Camera size={22} />
+              </Button>
+            )}
             <Button onClick={() => setScan(true)} aria-label="Сканировать штрихкод" className="px-3">
               <ScanBarcode size={22} />
             </Button>
@@ -286,6 +301,29 @@ export function FoodPicker({
           if (!customOpen?.food) onPick(f);
         }}
       />
+      {onPhotoAdd && (
+        <>
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              setPhoto(e.target.files?.[0] ?? null);
+              e.target.value = '';
+            }}
+          />
+          <PhotoSheet
+            file={photo}
+            initialMeal={meal}
+            onClose={() => setPhoto(null)}
+            onAdd={async (items, m) => {
+              await onPhotoAdd(items, m);
+              setPhoto(null);
+            }}
+          />
+        </>
+      )}
       {allowR && (
         <RecipeSheet open={!!recipeOpen} food={recipeOpen?.food} onClose={() => setRecipeOpen(null)} />
       )}

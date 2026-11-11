@@ -67,3 +67,46 @@ export async function shareFood(f: Food): Promise<void> {
     throw new Error(body.error ?? `HTTP ${res.status}`);
   }
 }
+
+export interface PhotoItem {
+  name: string;
+  grams: number;
+  kcal: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+}
+
+/** Сжимаем фото до ~768 px (JPEG) — быстрее отправка, нейросети этого хватает. */
+export async function photoToDataUrl(file: File, max = 768): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = url;
+    });
+    const k = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * k);
+    c.height = Math.round(img.height * k);
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.82);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** Распознать еду на фото: список блюд с примерным весом и КБЖУ на 100 г. */
+export async function recognizePhoto(image: string): Promise<PhotoItem[]> {
+  const res = await fetch(`${FOOD_API}/api/foods/photo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image }),
+    signal: AbortSignal.timeout(40000),
+  });
+  const data = (await res.json().catch(() => ({}))) as { items?: PhotoItem[]; error?: string };
+  if (!res.ok) throw new Error(data.error ?? 'Не удалось распознать фото');
+  return data.items ?? [];
+}
