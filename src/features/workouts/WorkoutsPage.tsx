@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { StackView, type StackLayer } from '../../components/StackView';
 import { AnimatePresence, motion } from 'motion/react';
-import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, SlidersHorizontal, Target } from 'lucide-react';
+import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Settings, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
 import { setSetting, useSetting } from '../../db/settings';
 import { Button, Card, IconButton, PageHeader, BackButton } from '../../components/ui';
@@ -18,6 +18,7 @@ import { ActiveWorkout } from './ActiveWorkout';
 import { ProgramEditor } from './ProgramEditor';
 import { WorkoutHistory } from './WorkoutHistory';
 import { WeekStrip } from './WeekStrip';
+import { SettingsSheet } from '../settings/SettingsSheet';
 
 /** «Доброе утро · понедельник, 10 ноября» */
 function greeting() {
@@ -136,6 +137,7 @@ function CatalogHome({
   onHistory: () => void;
   onStart: (d: ProgramDay) => void;
 }) {
+  const [settings, setSettings] = useState(false);
   const mine = findProgram(activeProgramId);
   const nextId = nextDayId(days, history.filter((w) => days.some((d) => d.id === w.dayId)));
   const next = days.find((d) => d.id === nextId);
@@ -146,9 +148,14 @@ function CatalogHome({
         title="Тренировки"
         subtitle={greeting()}
         right={
-          <IconButton label="История" onClick={onHistory} className="bg-white/10 text-white active:bg-white/20">
-            <History size={18} />
-          </IconButton>
+          <div className="flex gap-2">
+            <IconButton label="История" onClick={onHistory} className="bg-white/10 text-white active:bg-white/20">
+              <History size={18} />
+            </IconButton>
+            <IconButton label="Настройки" onClick={() => setSettings(true)} className="bg-white/10 text-white active:bg-white/20">
+              <Settings size={18} />
+            </IconButton>
+          </div>
         }
       />
       <div className="space-y-3 px-4 pb-6">
@@ -232,6 +239,7 @@ function CatalogHome({
           <p className="px-2 pt-2 text-center text-xs font-medium text-fg/35">Скоро здесь появятся новые программы</p>
         </Item>
       </div>
+      <SettingsSheet open={settings} onClose={() => setSettings(false)} />
     </Screen>
   );
 }

@@ -1,27 +1,44 @@
+import { Dumbbell, Palette, TrendingUp, UtensilsCrossed, type LucideIcon } from 'lucide-react';
 import { FEATURES, setFeature, useFeature, type FeatureId } from '../../lib/features';
 import { Sheet } from '../../components/ui';
 
-/** Настройки: дополнительные функции «по желанию». */
+const GROUPS: { name: string; Icon: LucideIcon; always?: string[] }[] = [
+  { name: 'Оформление', Icon: Palette },
+  { name: 'Тренировки', Icon: Dumbbell, always: ['Таймер отдыха', 'Личные рекорды', 'Серия недель'] },
+  { name: 'Питание', Icon: UtensilsCrossed, always: ['Расчёт нормы калорий'] },
+  { name: 'Прогресс', Icon: TrendingUp },
+];
+
+/** Настройки по разделам: переключатели функций «по желанию» и то, что работает всегда. */
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Sheet open={open} onClose={onClose} title="Настройки">
-      <div className="space-y-2">
-        <div className="eyebrow">Дополнительные функции</div>
-        {FEATURES.map((f) => (
-          <FeatureRow key={f.id} id={f.id} title={f.title} hint={f.hint} />
+      <div className="space-y-5">
+        {GROUPS.map(({ name, Icon, always }) => (
+          <section key={name} className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Icon size={14} strokeWidth={2.6} className="text-gold" />
+              <span className="eyebrow">{name}</span>
+            </div>
+            <div className="overflow-hidden rounded-2xl bg-fg/[.05]">
+              {FEATURES.filter((f) => f.group === name).map((f, i) => (
+                <FeatureRow key={f.id} id={f.id} title={f.title} hint={f.hint} first={i === 0} />
+              ))}
+            </div>
+            {always && (
+              <p className="px-1 text-xs font-medium text-fg/45">Всегда включено: {always.join(', ').toLowerCase().replace(/^./, (c) => c.toUpperCase())}</p>
+            )}
+          </section>
         ))}
-        <p className="pt-1 text-xs font-medium text-fg/45">
-          Таймер отдыха, личные рекорды, расчёт нормы калорий и серия тренировок работают всегда.
-        </p>
       </div>
     </Sheet>
   );
 }
 
-function FeatureRow({ id, title, hint }: { id: FeatureId; title: string; hint: string }) {
+function FeatureRow({ id, title, hint, first }: { id: FeatureId; title: string; hint: string; first: boolean }) {
   const on = useFeature(id);
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-fg/[.05] px-4 py-3">
+    <label className={`flex cursor-pointer items-center gap-3 px-4 py-3 ${first ? '' : 'border-t border-fg/[.06]'}`}>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-bold">{title}</span>
         <span className="block text-xs font-medium text-fg/50">{hint}</span>
