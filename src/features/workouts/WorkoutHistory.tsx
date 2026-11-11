@@ -8,6 +8,7 @@ import { formatDay, formatDuration } from '../../lib/date';
 import { fmt } from '../../lib/format';
 import { doneSets, formatSets, tonnage } from '../../lib/workout';
 import { shareImage, workoutCard } from '../../lib/shareCard';
+import { useAllowed } from '../../lib/features';
 import type { Workout } from '../../types';
 import { useHistory } from './hooks';
 
@@ -52,6 +53,7 @@ const sorters: Record<SortKey, (a: Workout, b: Workout) => number> = {
 
 export function WorkoutHistory({ onBack }: { onBack: () => void }) {
   const history = useHistory();
+  const canShare = useAllowed('share');
   const [open, setOpen] = useState<number | null>(null);
   const [sort, setSort] = useState<SortKey>(() => load(SORT_KEY, 'new'));
   const [filter, setFilter] = useState<string>(() => load(FILTER_KEY, 'all'));
@@ -232,12 +234,12 @@ export function WorkoutHistory({ onBack }: { onBack: () => void }) {
                               >
                                 <Trash2 size={14} /> Удалить
                               </button>
-                              <button
+                              {canShare && <button
                                 className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-3 py-1.5 text-xs font-extrabold text-ink shadow-gold active:scale-95"
                                 onClick={() => workoutCard(w, history).then((b) => shareImage(b, `trenirovka-${w.date}.png`))}
                               >
                                 <Share size={14} strokeWidth={2.6} /> Поделиться
-                              </button>
+                              </button>}
                             </div>
                           </div>
                         </motion.div>

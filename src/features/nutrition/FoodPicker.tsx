@@ -14,7 +14,7 @@ import { FoodRow } from './FoodRow';
 import { BarcodeScanner } from './BarcodeScanner';
 import { CustomFoodSheet } from './CustomFoodSheet';
 import { RecipeSheet } from './RecipeSheet';
-import { useFeature } from '../../lib/features';
+import { useAllowed, useFeature } from '../../lib/features';
 
 type Tab = 'search' | 'fav' | 'recent' | 'mine';
 
@@ -54,7 +54,7 @@ export function FoodPicker({
 
   // База читается только когда окно открыто — закрытое окно ничего не грузит.
   const foods = useLiveQuery(() => (open ? db.foods.filter((f) => !f.hidden).toArray() : EMPTY), [open], EMPTY);
-  const admin = useFeature('admin');
+  const photoAllowed = useAllowed('photo');
 
   useEffect(() => {
     if (!open) {
@@ -179,7 +179,7 @@ export function FoodPicker({
                 if (tab !== 'search') setTab('search');
               }}
             />
-            {onPhotoAdd && (
+            {onPhotoAdd && photoAllowed && (
               <Button onClick={() => photoRef.current?.click()} aria-label="Еда по фото" className="px-3">
                 <Camera size={22} />
               </Button>
@@ -247,7 +247,7 @@ export function FoodPicker({
                 key={f.id}
                 food={f}
                 onPick={onPick}
-                onEdit={admin || f.source === 'custom' || f.source === 'recipe' ? editHandler : undefined}
+                onEdit={f.source === 'custom' || f.source === 'recipe' ? editHandler : undefined}
               />
             ))}
           </ul>

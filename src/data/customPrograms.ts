@@ -31,7 +31,8 @@ export function toCatalog(c: CustomProgram): CatalogProgram {
     goal: 'Своя',
     equipment: 'на ваш выбор',
     days: () => c.days,
-    custom: { icon: c.icon, color: c.color },
+    look: { icon: c.icon, color: c.color },
+    userMade: true,
   };
 }
 

@@ -1,4 +1,4 @@
-import { EXERCISES, type MuscleGroup } from '../data/exercises';
+import { allExercises, type MuscleGroup } from '../data/exercises';
 import type { Workout } from '../types';
 import { addDays, todayISO } from './date';
 import { doneSets, normName } from './workout';
@@ -7,7 +7,7 @@ export type Muscle = Exclude<MuscleGroup, 'Кардио' | 'Взрывная р�
 
 export const MUSCLES: Muscle[] = ['Грудь', 'Спина', 'Плечи', 'Бицепс', 'Трицепс', 'Предплечья', 'Пресс и кор', 'Квадрицепс', 'Ягодицы и бицепс бедра', 'Икры'];
 
-const GROUP = new Map(EXERCISES.map((e) => [normName(e.name), e.group]));
+const groupOf = (k: string) => allExercises().find((e) => normName(e.name) === k)?.group;
 
 /** Если упражнения нет в справочнике — угадываем мышцу по словам в названии. */
 const RULES: [RegExp, Muscle][] = [
@@ -25,7 +25,7 @@ const RULES: [RegExp, Muscle][] = [
 
 export function muscleOf(name: string): Muscle | null {
   const k = normName(name);
-  const g = GROUP.get(k);
+  const g = groupOf(k);
   if (g) return (MUSCLES as string[]).includes(g) ? (g as Muscle) : null;
   for (const [re, m] of RULES) if (re.test(k)) return m;
   return null;

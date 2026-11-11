@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { Plus } from 'lucide-react';
-import { EXERCISES, MUSCLE_GROUPS, type CatalogExercise, type MuscleGroup } from '../../data/exercises';
+import { allExercises, MUSCLE_GROUPS, type CatalogExercise, type MuscleGroup } from '../../data/exercises';
 import { EASE, spring } from '../../components/motion';
 
 const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').trim();
@@ -24,7 +24,7 @@ export function ExercisePicker({
   const q = norm(query);
 
   const list = useMemo(() => {
-    let rows = group === 'all' ? EXERCISES : EXERCISES.filter((e) => e.group === group);
+    let rows = group === 'all' ? allExercises() : allExercises().filter((e) => e.group === group);
     if (q) {
       const words = q.split(/\s+/);
       rows = rows.filter((e) => {
@@ -37,7 +37,7 @@ export function ExercisePicker({
 
   return (
     <div className="space-y-2">
-      <div className="eyebrow">Справочник · {EXERCISES.length} упражнений</div>
+      <div className="eyebrow">Справочник · {allExercises().length} упражнений</div>
       <div className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none]">
         <LayoutGroup id="muscle-groups">
           <div className="flex w-max gap-1.5">

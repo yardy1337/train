@@ -1,4 +1,4 @@
-import { EXERCISES, type CatalogExercise, type MuscleGroup } from '../data/exercises';
+import { allExercises, type CatalogExercise, type MuscleGroup } from '../data/exercises';
 
 const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
 
@@ -30,10 +30,10 @@ function pattern(e: CatalogExercise): string {
   }
 }
 
-const byName = new Map(EXERCISES.map((e) => [norm(e.name), e]));
+const byNameOf = (k: string) => allExercises().find((e) => norm(e.name) === k);
 
 export function findInCatalog(name: string): CatalogExercise | undefined {
-  return byName.get(norm(name));
+  return byNameOf(norm(name));
 }
 
 /** Слова названия (без коротких), чтобы находить «с гантелями» ↔ «с гантелью» и т. п. */
@@ -52,7 +52,7 @@ export function alternativesFor(name: string, limit = 10): { items: CatalogExerc
   if (!base) return { items: [] };
   const p = pattern(base);
   const w = new Set(words(base.name));
-  const items = EXERCISES.filter((e) => e.group === base.group && norm(e.name) !== norm(base.name))
+  const items = allExercises().filter((e) => e.group === base.group && norm(e.name) !== norm(base.name))
     .map((e) => ({
       e,
       score:

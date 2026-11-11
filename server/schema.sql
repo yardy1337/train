@@ -36,3 +36,23 @@ CREATE TABLE IF NOT EXISTS post_log (
   ts INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS post_log_ip_ts ON post_log(ip, ts);
+
+-- ===== Админ-панель =====
+-- Настройки приложения для всех пользователей (каталог программ, объявление, функции…) — один JSON.
+CREATE TABLE IF NOT EXISTS app_config (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  data TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1,
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+-- Администратор: пароль хранится только в виде хэша (PBKDF2).
+CREATE TABLE IF NOT EXISTS admin (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  salt TEXT NOT NULL,
+  hash TEXT NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  token_hash TEXT PRIMARY KEY,
+  expires INTEGER NOT NULL
+);

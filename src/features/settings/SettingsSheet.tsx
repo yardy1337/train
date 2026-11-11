@@ -1,8 +1,7 @@
 import { Dumbbell, Palette, ShieldCheck, TrendingUp, UtensilsCrossed, type LucideIcon } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { allPrograms } from '../../data/programs';
-import { resetOverride, patchOverride, useProgramOverrides } from '../../data/programOverrides';
-import { db } from '../../db/db';
+import { ChevronRight } from 'lucide-react';
+import { useAppConfig } from '../../lib/appConfig';
+import { setAdminOpen } from '../../lib/adminOpen';
 import { FEATURES, setFeature, useFeature, type FeatureId } from '../../lib/features';
 import { Sheet } from '../../components/ui';
 
@@ -11,28 +10,42 @@ const GROUPS: { name: string; Icon: LucideIcon }[] = [
   { name: 'Тренировки', Icon: Dumbbell },
   { name: 'Питание', Icon: UtensilsCrossed },
   { name: 'Прогресс', Icon: TrendingUp },
-  { name: 'Администратор', Icon: ShieldCheck },
 ];
 
 /** Настройки по разделам: переключатели функций «по желанию». */
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const cfg = useAppConfig();
+  const disabled = new Set(cfg.features?.disabled ?? []);
   return (
     <Sheet open={open} onClose={onClose} title="Настройки">
       <div className="space-y-5">
-        {GROUPS.map(({ name, Icon }) => (
+        {GROUPS.filter(({ name }) => FEATURES.some((f) => f.group === name && !disabled.has(f.id))).map(({ name, Icon }) => (
           <section key={name} className="space-y-2">
             <div className="flex items-center gap-1.5">
               <Icon size={14} strokeWidth={2.6} className="text-gold" />
               <span className="eyebrow">{name}</span>
             </div>
             <div className="overflow-hidden rounded-2xl bg-fg/[.05]">
-              {FEATURES.filter((f) => f.group === name).map((f, i) => (
+              {FEATURES.filter((f) => f.group === name && !disabled.has(f.id)).map((f, i) => (
                 <FeatureRow key={f.id} id={f.id} title={f.title} hint={f.hint} first={i === 0} />
               ))}
             </div>
           </section>
         ))}
-        <AdminExtras />
+        <button
+          onClick={() => {
+            onClose();
+            setAdminOpen(true);
+          }}
+          className="flex w-full items-center gap-3 rounded-2xl border border-fg/10 px-4 py-3 text-left active:bg-fg/[.04]"
+        >
+          <ShieldCheck size={20} className="text-gold" />
+          <span className="flex-1">
+            <span className="block text-sm font-bold">Управление приложением</span>
+            <span className="block text-xs font-medium text-fg/50">Для администратора, вход по паролю</span>
+          </span>
+          <ChevronRight size={18} className="text-fg/30" />
+        </button>
       </div>
     </Sheet>
   );
@@ -52,42 +65,3 @@ function FeatureRow({ id, title, hint, first }: { id: FeatureId; title: string; 
   );
 }
 
-/** Для режима редактора: скрытые программы и скрытые продукты — можно вернуть. */
-function AdminExtras() {
-  const admin = useFeature('admin');
-  const overrides = useProgramOverrides();
-  const hiddenFoods = useLiveQuery(() => db.foods.filter((f) => !!f.hidden).toArray(), [], []);
-  if (!admin) return null;
-  const hidden = allPrograms(true).filter((p) => overrides[p.id]?.hidden);
-  return (
-    <section className="space-y-2">
-      <p className="px-1 text-xs font-medium text-fg/50">
-        В режиме редактора на странице любой программы есть кнопка правки, у подсказок по технике — «Изменить», у продуктов — карандаш. Правки хранятся только на этом телефоне.
-      </p>
-      {hidden.length > 0 && (
-        <div className="rounded-2xl bg-fg/[.05] p-3">
-          <div className="eyebrow mb-2">Скрытые программы</div>
-          {hidden.map((p) => (
-            <div key={p.id} className="flex items-center gap-2 py-1">
-              <span className="flex-1 text-sm font-bold">{p.name}</span>
-              <button className="rounded-lg bg-surface px-2.5 py-1 text-xs font-bold shadow-card" onClick={() => patchOverride(p.id, { hidden: false })}>
-                Показать
-              </button>
-              <button className="rounded-lg px-2.5 py-1 text-xs font-bold text-fg/55" onClick={() => confirm(`Вернуть «${p.name}» к исходному виду?`) && resetOverride(p.id)}>
-                Сбросить
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {hiddenFoods.length > 0 && (
-        <div className="rounded-2xl bg-fg/[.05] p-3">
-          <div className="eyebrow mb-2">Удалённые продукты · {hiddenFoods.length}</div>
-          <button className="rounded-lg bg-surface px-2.5 py-1 text-xs font-bold shadow-card" onClick={() => db.foods.bulkUpdate(hiddenFoods.map((f) => ({ key: f.id, changes: { hidden: undefined } })))}>
-            Вернуть все
-          </button>
-        </div>
-      )}
-    </section>
-  );
-}

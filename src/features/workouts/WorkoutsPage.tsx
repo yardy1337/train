@@ -9,9 +9,8 @@ import { Item, Screen } from '../../components/motion';
 import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, allPrograms, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
 import { createCustomProgram, customDayStore, deleteCustomProgram, newDay, patchCustomProgram, useCustomPrograms } from '../../data/customPrograms';
 import { CustomProgramSheet } from './CustomProgramSheet';
-import { ProgramInfoSheet } from './ProgramInfoSheet';
-import { overrideDayStore, patchOverride, resetOverride, useProgramOverrides } from '../../data/programOverrides';
-import { useFeature } from '../../lib/features';
+import { useAllowed } from '../../lib/features';
+import { useAppConfig } from '../../lib/appConfig';
 import { TechniqueSheet, useHasTechnique } from './TechniqueSheet';
 import { shareImage, workoutCard } from '../../lib/shareCard';
 import { BounceTrophy } from '../../components/LiveIcons';
@@ -50,9 +49,8 @@ export function WorkoutsPage() {
   const activeProgramId = useSetting<string>(ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID);
   // Свои программы пользователя — регистрируются в каталоге до любых поисков по нему.
   const customs = useCustomPrograms();
-  useProgramOverrides();
-  const admin = useFeature('admin');
-  const [infoFor, setInfoFor] = useState<string | null>(null);
+  // Настройки от администратора (каталог, объявление): экран обновится, когда придут новые.
+  const cfg = useAppConfig();
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
 
@@ -65,14 +63,14 @@ export function WorkoutsPage() {
   };
 
   // Редактируемая программа (с вашими правками) хранится в базе, остальные — шаблоны каталога.
-  const daysOf = (p: CatalogProgram) => (p.id === activeProgramId && !p.custom ? days : templateDays(p));
+  const daysOf = (p: CatalogProgram) => (p.id === activeProgramId && !p.userMade ? days : templateDays(p));
   // «Моя программа» — та, по которой была последняя тренировка.
   const lastDayId = history[0]?.dayId;
   const lastUsedId =
     !lastDayId || days.some((d) => d.id === lastDayId) ? activeProgramId : programOfDay(lastDayId)?.id ?? activeProgramId;
   // Закреплённая программа всегда сверху; иначе — та, по которой была последняя тренировка.
   // По умолчанию закреплена «Верх / Низ»; если пользователь открепит — сохранится null.
-  const pinnedRaw = useSetting<string | null>(PINNED_KEY, DEFAULT_PROGRAM_ID);
+  const pinnedRaw = useSetting<string | null>(PINNED_KEY, cfg.programs?.defaultPinned ?? DEFAULT_PROGRAM_ID);
   const pinnedId = pinnedRaw && allPrograms().some((p) => p.id === pinnedRaw) ? pinnedRaw : null;
   const currentId = pinnedId ?? lastUsedId;
   const togglePin = (id: string) => setSetting(PINNED_KEY, pinnedId === id ? null : id);
@@ -91,7 +89,7 @@ export function WorkoutsPage() {
           isCurrent={pid === currentId}
           pinned={pid === pinnedId}
           onTogglePin={() => togglePin(pid)}
-          canEdit={pid === activeProgramId || !!program.custom || admin}
+          canEdit={pid === activeProgramId || !!program.userMade}
           days={daysOf(program)}
           history={history}
           onBack={() => setView({ name: 'home' })}
@@ -119,11 +117,7 @@ export function WorkoutsPage() {
           }
         />
       ) : (
-        <ProgramEditor
-          onBack={back}
-          {...(view.id === activeProgramId ? {} : { days: templateDays(findProgram(view.id)), store: overrideDayStore(view.id) })}
-          extra={admin ? <AdminProgramTools id={view.id} onInfo={() => setInfoFor(view.id)} onHidden={() => setView({ name: 'home' })} /> : undefined}
-        />
+        <ProgramEditor onBack={back} />
       ),
     });
   }
@@ -156,7 +150,6 @@ export function WorkoutsPage() {
           </motion.div>
         ) : null}
       </AnimatePresence>
-      <ProgramInfoSheet program={infoFor ? findProgram(infoFor) : null} onClose={() => setInfoFor(null)} />
       <CustomProgramSheet
         open={creating}
         onClose={() => setCreating(false)}
@@ -218,6 +211,18 @@ function CatalogHome({
     }
   });
   const finished = finishedId ? history.find((w) => w.id === finishedId) : undefined;
+  const cfg = useAppConfig();
+  const canShare = useAllowed('share');
+  const canCreate = useAllowed('customPrograms');
+  const ann = cfg.announcement;
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem('announcementDismissed');
+    } catch {
+      return null;
+    }
+  });
+  const showAnn = !!ann?.on && !!(ann.title || ann.text) && dismissed !== ann.id;
   const mine = findProgram(activeProgramId);
   const nextId = nextDayId(days, history.filter((w) => days.some((d) => d.id === w.dayId)));
   const next = days.find((d) => d.id === nextId);
@@ -239,6 +244,27 @@ function CatalogHome({
         }
       />
       <div className="space-y-3 px-4 pb-6">
+        {showAnn && ann && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-2xl border border-gold/40 bg-gold-soft p-4 pr-10">
+            <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-gold" />
+            {ann.title && <div className="font-extrabold">{ann.title}</div>}
+            {ann.text && <div className="mt-0.5 whitespace-pre-line text-sm font-medium text-fg/75">{ann.text}</div>}
+            <button
+              aria-label="Скрыть объявление"
+              onClick={() => {
+                setDismissed(ann.id);
+                try {
+                  localStorage.setItem('announcementDismissed', ann.id);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full text-fg/45 active:bg-fg/[.06]"
+            >
+              <X size={16} strokeWidth={2.6} />
+            </button>
+          </motion.div>
+        )}
         {finished && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.97 }}
@@ -252,12 +278,12 @@ function CatalogHome({
                 {finished.dayName} · {finished.dayTitle}
               </div>
             </div>
-            <button
+            {canShare && <button
               onClick={() => workoutCard(finished, history).then((b) => shareImage(b, `trenirovka-${finished.date}.png`))}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-navy px-3 py-2 text-xs font-extrabold text-white active:scale-95"
             >
               <Share size={14} strokeWidth={2.6} /> Поделиться
-            </button>
+            </button>}
             <button onClick={() => setFinishedId(null)} aria-label="Скрыть" className="-mr-1 grid h-7 w-7 shrink-0 place-items-center rounded-full active:bg-black/10">
               <X size={16} strokeWidth={2.6} />
             </button>
@@ -347,14 +373,14 @@ function CatalogHome({
           );
         })}
 
-        <Item index={allPrograms().length + 3}>
+        {canCreate && <Item index={allPrograms().length + 3}>
           <button
             onClick={onCreate}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-fg/15 px-4 py-4 text-sm font-extrabold text-fg/60 transition-colors active:bg-fg/[.04]"
           >
             <Plus size={18} strokeWidth={2.6} /> Создать свою программу
           </button>
-        </Item>
+        </Item>}
       </div>
       <SettingsSheet open={settings} onClose={() => setSettings(false)} />
     </Screen>
@@ -513,29 +539,3 @@ function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: s
   );
 }
 
-/** Режим редактора: описание, скрыть, вернуть как было — для встроенной программы. */
-function AdminProgramTools({ id, onInfo, onHidden }: { id: string; onInfo: () => void; onHidden: () => void }) {
-  const name = findProgram(id).name;
-  return (
-    <Card className="space-y-2">
-      <div className="eyebrow">Режим редактора</div>
-      <Button className="w-full" onClick={onInfo}>
-        Название и описание
-      </Button>
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          onClick={async () => {
-            if (!confirm(`Скрыть программу «${name}» из каталога? Вернуть можно в настройках.`)) return;
-            onHidden();
-            await patchOverride(id, { hidden: true });
-          }}
-        >
-          Скрыть
-        </Button>
-        <Button variant="danger" onClick={() => confirm(`Вернуть «${name}» к исходному виду? Ваши правки этой программы пропадут.`) && resetOverride(id)}>
-          Как было
-        </Button>
-      </div>
-    </Card>
-  );
-}

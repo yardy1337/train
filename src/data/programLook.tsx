@@ -56,7 +56,7 @@ export const CUSTOM_ICONS: Record<string, ComponentType<IconProps>> = {
 export const CUSTOM_COLORS = ['#3461d1', '#0f8a8c', '#7650d0', '#d0543c', '#1f9a55', '#c9a227', '#d23f7a', '#4b5563'];
 
 export function lookOf(id: string): ProgramLook {
-  const c = allPrograms().find((p) => p.id === id)?.custom;
+  const c = allPrograms(true).find((p) => p.id === id)?.look;
   if (c) return { Icon: CUSTOM_ICONS[c.icon] ?? Dumbbell, color: c.color };
   return LOOKS[id] ?? { Icon: Dumbbell, color: '#3461d1' };
 }

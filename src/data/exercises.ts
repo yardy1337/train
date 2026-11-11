@@ -232,6 +232,17 @@ export const EXERCISES: CatalogExercise[] = MUSCLE_GROUPS.flatMap((group) =>
   raw[group].map(([name, kind]) => ({ name, group, kind })),
 );
 
+/** Упражнения, добавленные администратором (приходят с сервера вместе с настройками). */
+let extra: CatalogExercise[] = [];
+let merged: CatalogExercise[] = EXERCISES;
+export function registerExtraExercises(list: CatalogExercise[]) {
+  extra = list;
+  const known = new Set(EXERCISES.map((e) => e.name.toLowerCase()));
+  merged = [...EXERCISES, ...extra.filter((e) => !known.has(e.name.toLowerCase()))];
+}
+/** Весь справочник: встроенные упражнения + добавленные администратором. */
+export const allExercises = () => merged;
+
 /** Значения по умолчанию для нового упражнения из справочника. */
 export function defaultsFor(kind: ExerciseKind) {
   if (kind === 'base') return { sets: 3, repsMin: 6, repsMax: 10, rest: 90, note: undefined };

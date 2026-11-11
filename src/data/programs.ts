@@ -17,8 +17,10 @@ export interface CatalogProgram {
   equipment: string;
   /** Дни программы. id дней должны быть уникальны в пределах каталога. */
   days: () => ProgramDay[];
-  /** Своя программа пользователя: значок и цвет выбраны им самим. */
-  custom?: { icon: string; color: string };
+  /** Значок и цвет (своя программа, программа администратора или правка). */
+  look?: { icon: string; color: string };
+  /** Программа, созданная самим пользователем на телефоне. */
+  userMade?: boolean;
 }
 
 const HEAVY = 120; // тяжёлая база
@@ -224,8 +226,10 @@ export function registerCustomPrograms(list: CatalogProgram[]) {
   custom = list;
 }
 
-/** Правки администратора (режим редактора) поверх встроенных программ. Хранятся на телефоне. */
+/** Правки администратора поверх программ каталога (приходят с сервера). */
 export interface ProgramOverride {
+  icon?: string;
+  color?: string;
   hidden?: boolean;
   name?: string;
   tagline?: string;
@@ -237,33 +241,50 @@ export interface ProgramOverride {
   days?: ProgramDay[];
 }
 let overrides: Record<string, ProgramOverride> = {};
-export function registerProgramOverrides(o: Record<string, ProgramOverride>) {
-  overrides = o;
+let added: CatalogProgram[] = [];
+let order: string[] = [];
+/** Настройки каталога от администратора: правки, новые программы, порядок. */
+export function registerCatalog(c: { overrides?: Record<string, ProgramOverride>; added?: CatalogProgram[]; order?: string[] }) {
+  overrides = c.overrides ?? {};
+  added = c.added ?? [];
+  order = c.order ?? [];
 }
 export const overrideOf = (id: string): ProgramOverride | undefined => overrides[id];
 
 function withOverride(p: CatalogProgram): CatalogProgram {
   const o = overrides[p.id];
   if (!o) return p;
-  const { hidden: _h, days, ...fields } = o;
+  const { hidden: _h, days, icon, color, ...fields } = o;
   void _h;
   const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined && v !== ''));
-  return { ...p, ...clean, days: days ? () => days : p.days };
+  const look = icon || color ? { icon: icon ?? p.look?.icon ?? 'dumbbell', color: color ?? p.look?.color ?? '#3461d1' } : p.look;
+  return { ...p, ...clean, look, days: days ? () => days : p.days };
 }
 
 /** Каталог: встроенные программы (с правками), затем свои. Скрытые — только с includeHidden. */
-export const allPrograms = (includeHidden = false) =>
-  [...PROGRAMS.map(withOverride), ...custom].filter((p) => includeHidden || !overrides[p.id]?.hidden);
+export function allPrograms(includeHidden = false) {
+  const list = [...PROGRAMS, ...added].map(withOverride).filter((p) => includeHidden || !overrides[p.id]?.hidden);
+  // Порядок задаёт администратор; не упомянутые — в конце в исходном порядке.
+  if (order.length) {
+    const pos = (id: string) => {
+      const i = order.indexOf(id);
+      return i < 0 ? order.length : i;
+    };
+    list.sort((a, b) => pos(a.id) - pos(b.id));
+  }
+  return [...list, ...custom];
+}
 
-/** Исходная программа из каталога — без правок. */
-export const originalProgram = (id: string) => PROGRAMS.find((p) => p.id === id);
+/** Программа без правок администратора (встроенная или добавленная). */
+export const originalProgram = (id: string) => [...PROGRAMS, ...added].find((p) => p.id === id);
+export const isBuiltinProgram = (id: string) => PROGRAMS.some((p) => p.id === id);
 
 export const findProgram = (id: string) => allPrograms(true).find((p) => p.id === id) ?? allPrograms()[0] ?? PROGRAMS[0];
 
 const templateCache = new Map<string, ProgramDay[]>();
 /** Дни программы из каталога (кэшируются — шаблоны не меняются; свои — всегда свежие). */
 export function templateDays(p: CatalogProgram): ProgramDay[] {
-  if (p.custom) return p.days();
+  if (p.userMade || !PROGRAMS.some((x) => x.id === p.id)) return p.days();
   const o = overrides[p.id]?.days;
   if (o) return o;
   let d = templateCache.get(p.id);

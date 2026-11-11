@@ -8,9 +8,13 @@
  * POST /api/foods/photo           — распознать еду на фото (Workers AI), примерные граммы и КБЖУ
  */
 
+import { handleAdmin } from './admin';
+
 export interface Env {
   DB: D1Database;
   AI: Ai;
+  /** Одноразовый код для создания администратора (секрет Wrangler). */
+  SETUP_CODE?: string;
   ALLOWED_ORIGINS: string;
 }
 
@@ -46,8 +50,8 @@ function cors(req: Request, env: Env): Record<string, string> {
   const allowed = env.ALLOWED_ORIGINS.split(',').map((s) => s.trim());
   return {
     'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : allowed[0],
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
@@ -202,7 +206,7 @@ async function addProduct(req: Request, env: Env) {
   });
   await env.DB.batch([
     env.DB.prepare('INSERT INTO post_log (ip, ts) VALUES (?1, ?2)').bind(key, Math.floor(Date.now() / 1000)),
-    env.DB.prepare('DELETE FROM post_log WHERE ts < ?1').bind(hourAgo - 86400),
+    env.DB.prepare('DELETE FROM post_log WHERE ts < ?1').bind(hourAgo - 8 * 86400),
   ]);
   const product = id ? await env.DB.prepare(`${SELECT} WHERE p.id = ?1`).bind(id).first<Row>() : null;
   return json({ product, existed: false }, req, env, 201);
@@ -293,6 +297,9 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req, env) });
 
     try {
+      const admin = await handleAdmin(req, env, url, (data, status = 200, cache = 'no-store') => json(data, req, env, status, cache));
+      if (admin) return admin;
+
       if (req.method === 'GET' && url.pathname === '/api/foods/search') {
         const q = (url.searchParams.get('q') ?? '').slice(0, 100);
         const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit')) || 30));

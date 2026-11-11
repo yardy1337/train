@@ -6,6 +6,7 @@ import { initDb } from './db/init';
 import './index.css';
 import { initSmoothScroll } from './lib/smoothScroll';
 import { initTheme } from './lib/features';
+import { initAppConfig } from './lib/appConfig';
 import cyrillicFont from '@fontsource-variable/manrope/files/manrope-cyrillic-wght-normal.woff2?url';
 import latinFont from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
 
@@ -34,6 +35,8 @@ function fontsReady() {
 }
 
 initTheme();
+// Настройки от администратора: сохранённые — сразу, свежие — с сервера в фоне.
+initAppConfig();
 initSmoothScroll();
 
 // Сервис-воркер: офлайн-работа и автообновление.

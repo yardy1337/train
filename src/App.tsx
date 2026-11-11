@@ -6,6 +6,7 @@ import { BottomNav, type Tab } from './components/BottomNav';
 import { RestTimerProvider } from './components/RestTimer';
 import { WorkoutsPage } from './features/workouts/WorkoutsPage';
 import { NutritionPage } from './features/nutrition/NutritionPage';
+import { AdminPanel } from './features/admin/AdminPanel';
 // Графики (recharts) грузим отдельным чанком — так быстрее первый запуск.
 const ProgressPage = lazy(() => import('./features/progress/ProgressPage').then((m) => ({ default: m.ProgressPage })));
 
@@ -50,6 +51,7 @@ export default function App() {
           </AnimatePresence>
         </main>
         <BottomNav tab={tab} onChange={setTab} />
+        <AdminPanel />
       </RestTimerProvider>
     </MotionConfig>
   );

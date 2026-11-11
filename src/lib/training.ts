@@ -1,14 +1,14 @@
-import { EXERCISES } from '../data/exercises';
+import { allExercises } from '../data/exercises';
 import type { WorkoutExercise } from '../types';
 import { doneSets, normName, shouldIncrease } from './workout';
 
-const KIND = new Map(EXERCISES.map((e) => [normName(e.name), e.kind]));
+const kindOf = (name: string) => allExercises().find((e) => normName(e.name) === normName(name))?.kind;
 const isDumbbell = (name: string) => /гантел/i.test(name);
 export const isBarbell = (name: string) => /штанг|смит|гриф|становая/i.test(name) && !/гантел|гир|гоблет/i.test(name);
 
 /** Многосуставное упражнение (по справочнику, иначе — по длинному отдыху). */
 export function isCompound(ex: Pick<WorkoutExercise, 'name' | 'rest'>) {
-  const k = KIND.get(normName(ex.name));
+  const k = kindOf(ex.name);
   return k ? k === 'base' : ex.rest >= 90;
 }
 
