@@ -6,6 +6,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { db } from '../../db/db';
 import { Button, Card, Empty, Field, IconButton, NumInput, PageHeader, Segmented, TextInput } from '../../components/ui';
 import { Records } from './Records';
+import { MuscleMap } from './MuscleMap';
 import { Measurements } from './Measurements';
 import { SettingsSheet } from '../settings/SettingsSheet';
 import { formatShort, todayISO } from '../../lib/date';
@@ -48,6 +49,7 @@ export function ProgressPage() {
         }
       />
       <div className="space-y-3 px-4 pb-4">
+        <MuscleMap index={1} />
         <BodyWeight />
         {measurements && <Measurements index={2} />}
         <Records index={2} />

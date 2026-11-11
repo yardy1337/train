@@ -61,7 +61,26 @@ export const useInStackLayer = () => useContext(InStackLayer);
 export interface StackLayer {
   key: string;
   node: ReactNode;
+  /** Прямоугольник плитки, из которой экран «раскрывается» (как карточки в App Store). */
+  origin?: Rect;
 }
+
+export interface Rect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  /** Плитка тёмная — раскрываемся из тёмно-синего, а не из белого. */
+  dark?: boolean;
+}
+
+/** Где на экране элемент — для раскрытия слоя из него. */
+export const rectOf = (el: Element): Rect => {
+  const r = el.getBoundingClientRect();
+  return { top: r.top, left: r.left, width: r.width, height: r.height, dark: el.getAttribute('data-tile') === 'dark' };
+};
+
+const EXPAND_RADIUS = 24;
 
 const width = () => window.innerWidth || 390;
 
@@ -98,6 +117,7 @@ export function StackView({ base, layers, onSwipeBack }: { base: ReactNode; laye
             topX={topX}
             underX={underX}
             onSwipeBack={onSwipeBack}
+            origin={l.origin}
           >
             {l.node}
           </Layer>
@@ -113,16 +133,38 @@ function Layer({
   topX,
   underX,
   onSwipeBack,
+  origin: originProp,
 }: {
   children: ReactNode;
   isTop: boolean;
   topX: MotionValue<number>;
   underX: MotionValue<number>;
   onSwipeBack: () => void;
+  origin?: Rect;
 }) {
   const x = useMotionValue(width());
   const [isPresent, safeToRemove] = usePresence();
   const swiping = useRef(false);
+
+  // Раскрытие из плитки: слой стоит на месте и «растёт» из прямоугольника плитки до всего экрана,
+  // а x при этом ведёт только экран под ним (сдвиг и затемнение). Свайп назад — обычный, вбок.
+  const [origin] = useState(originProp);
+  const follow = useRef(!origin); // слой двигается вместе с x
+  const ownX = useTransform(x, (v) => (follow.current ? v : 0));
+  const p = useMotionValue(origin ? 0 : 1); // 0 — размером с плитку, 1 — весь экран
+  const clip = useTransform(p, (v) => {
+    if (!origin || v >= 1) return 'none';
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const k = 1 - v;
+    const top = origin.top * k;
+    const left = origin.left * k;
+    const right = (W - origin.left - origin.width) * k;
+    const bottom = (H - origin.top - origin.height) * k;
+    return `inset(${top}px ${right}px ${bottom}px ${left}px round ${EXPAND_RADIUS * k}px)`;
+  });
+  // Пока плитка раскрывается, поверх — белая «карточка», содержимое проявляется.
+  const cover = useTransform(p, [0, 0.45], [1, 0]);
 
   // Ведущий слой (верхний или уходящий) управляет общим положением:
   // по нему двигается экран под ним и затемнение.
@@ -134,25 +176,48 @@ function Layer({
     return unsub;
   }, [driving, x, topX]);
 
-  // Появление: справа налево.
+  // Появление: справа налево (или раскрытие из плитки).
   useEffect(() => {
-    const c = animate(x, 0, { duration: 0.42, ease: IOS_EASE });
-    return () => c.stop();
-  }, [x]);
+    const c = animate(x, 0, { duration: origin ? 0.5 : 0.42, ease: IOS_EASE });
+    const e = origin
+      ? animate(p, 1, {
+          type: 'spring',
+          stiffness: 260,
+          damping: 30,
+          onComplete: () => {
+            follow.current = true;
+          },
+        })
+      : null;
+    return () => {
+      c.stop();
+      e?.stop();
+    };
+  }, [x, p, origin]);
 
-  // Уход (кнопка «назад», системный «назад» или после свайпа): вправо за экран.
+  // Уход (кнопка «назад», системный «назад» или после свайпа): вправо за экран — или обратно в плитку.
   useEffect(() => {
     if (isPresent) return;
+    if (origin && !swiping.current) {
+      follow.current = false;
+      x.set(x.get()); // пересчитать положение слоя без сдвига
+      const c = animate(x, width(), { duration: 0.42, ease: IOS_EASE });
+      const e = animate(p, 0, { duration: 0.42, ease: IOS_EASE, onComplete: () => safeToRemove?.() });
+      return () => {
+        c.stop();
+        e.stop();
+      };
+    }
     const c = animate(x, width(), { duration: swiping.current ? 0.2 : 0.36, ease: IOS_EASE, onComplete: () => safeToRemove?.() });
     return () => c.stop();
-  }, [isPresent, x, safeToRemove]);
+  }, [isPresent, x, p, origin, safeToRemove]);
 
   // ---- свайп от левого края ----
   const start = useRef<{ x: number; y: number; t: number; decided: boolean; active: boolean } | null>(null);
   const samples = useRef<{ x: number; t: number }[]>([]);
 
   const onTouchStart = (e: React.TouchEvent) => {
-    if (!isTop || e.touches.length !== 1) return;
+    if (!isTop || e.touches.length !== 1 || !follow.current) return;
     const t = e.touches[0];
     if (t.clientX > EDGE) return;
     start.current = { x: t.clientX, y: t.clientY, t: performance.now(), decided: false, active: false };
@@ -207,7 +272,7 @@ function Layer({
     <motion.div
       data-lenis-prevent
       className="fixed inset-0 z-[25] overflow-y-auto overscroll-contain bg-bg pb-[calc(72px+env(safe-area-inset-bottom))] shadow-[-10px_0_30px_rgb(0_0_0/0.18)]"
-      style={{ x: driving ? x : underX }}
+      style={{ x: driving ? ownX : underX, clipPath: clip }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -216,6 +281,7 @@ function Layer({
       <InStackLayer.Provider value>
         <div className="mx-auto max-w-lg">{children}</div>
       </InStackLayer.Provider>
+      {origin && <motion.div aria-hidden className={`pointer-events-none fixed inset-0 ${origin.dark ? 'bg-navy' : 'bg-surface'}`} style={{ opacity: cover }} />}
     </motion.div>
   );
 }

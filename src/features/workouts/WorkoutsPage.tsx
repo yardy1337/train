@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { StackView, type StackLayer } from '../../components/StackView';
+import { StackView, rectOf, type Rect, type StackLayer } from '../../components/StackView';
 import { AnimatePresence, motion } from 'motion/react';
 import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Settings, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
@@ -30,7 +30,7 @@ function greeting() {
 
 const PINNED_KEY = 'pinnedProgram';
 
-type View = { name: 'home' } | { name: 'program'; id: string } | { name: 'editor' } | { name: 'history' };
+type View = { name: 'home' } | { name: 'program'; id: string; origin?: Rect } | { name: 'editor' } | { name: 'history' };
 
 
 export function WorkoutsPage() {
@@ -68,6 +68,7 @@ export function WorkoutsPage() {
     const program = findProgram(pid);
     layers.push({
       key: `program-${pid}`,
+      origin: view.name === 'program' ? view.origin : undefined,
       node: (
         <ProgramPage
           program={program}
@@ -105,7 +106,7 @@ export function WorkoutsPage() {
                   history={history}
                   activeProgramId={currentId}
                   pinnedId={pinnedId}
-                  onOpen={(id) => setView({ name: 'program', id })}
+                  onOpen={(id, origin) => setView({ name: 'program', id, origin })}
                   onHistory={() => setView({ name: 'history' })}
                   onStart={start}
                 />
@@ -133,7 +134,7 @@ function CatalogHome({
   history: Workout[];
   activeProgramId: string;
   pinnedId: string | null;
-  onOpen: (id: string) => void;
+  onOpen: (id: string, origin?: Rect) => void;
   onHistory: () => void;
   onStart: (d: ProgramDay) => void;
 }) {
@@ -160,10 +161,10 @@ function CatalogHome({
       />
       <div className="space-y-3 px-4 pb-6">
         <Item>
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-2 via-navy to-[#071636] p-5 text-white shadow-lift">
+          <div data-tile="dark" className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-2 via-navy to-[#071636] p-5 text-white shadow-lift">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/[.06]" />
             <div className="pointer-events-none absolute -bottom-14 right-12 h-32 w-32 rounded-full bg-white/[.07]" />
-            <button className="relative block w-full text-left" onClick={() => onOpen(mine.id)}>
+            <button className="relative block w-full text-left" onClick={(e) => onOpen(mine.id, rectOf(e.currentTarget.closest('[data-tile]') ?? e.currentTarget))}>
               <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-gold">
                 {pinnedId === mine.id && <Pin size={12} strokeWidth={2.6} />}
                 {pinnedId === mine.id ? 'Закреплённая программа' : 'Моя программа'}
@@ -202,7 +203,7 @@ function CatalogHome({
 
         {[...PROGRAMS].sort((a, b) => Number(b.id === pinnedId) - Number(a.id === pinnedId)).map((p, i) => (
           <Card key={p.id} index={i + 3} className="p-0">
-            <button className="flex w-full items-center gap-3 p-4 text-left active:bg-fg/[.02]" onClick={() => onOpen(p.id)}>
+            <button className="flex w-full items-center gap-3 p-4 text-left active:bg-fg/[.02]" onClick={(e) => onOpen(p.id, rectOf(e.currentTarget))}>
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent">
                 <Dumbbell size={22} strokeWidth={2.2} />
               </span>
