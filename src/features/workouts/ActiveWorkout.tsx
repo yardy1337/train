@@ -109,6 +109,12 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
     timer.stop();
     closed.current = true;
     await db.workouts.put({ ...w, status: 'done', finishedAt: Date.now() });
+    try {
+      // Главный экран предложит поделиться итогом.
+      sessionStorage.setItem('justFinished', String(w.id));
+    } catch {
+      /* ignore */
+    }
   };
 
   const cancel = async () => {

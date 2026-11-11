@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
-import { ArrowDownWideNarrow, ChevronDown, Clock, Dumbbell, Trash2, Weight } from 'lucide-react';
+import { ArrowDownWideNarrow, ChevronDown, Clock, Dumbbell, Share, Trash2, Weight } from 'lucide-react';
 import { db } from '../../db/db';
 import { BackButton, Card, Empty, PageHeader } from '../../components/ui';
 import { EASE, Item, Screen, spring } from '../../components/motion';
 import { formatDay, formatDuration } from '../../lib/date';
 import { fmt } from '../../lib/format';
 import { doneSets, formatSets, tonnage } from '../../lib/workout';
+import { shareImage, workoutCard } from '../../lib/shareCard';
 import type { Workout } from '../../types';
 import { useHistory } from './hooks';
 
@@ -224,12 +225,20 @@ export function WorkoutHistory({ onBack }: { onBack: () => void }) {
                                 <span className="text-right font-semibold tabular-nums text-fg/50">{formatSets(e.sets) || '—'}</span>
                               </div>
                             ))}
-                            <button
-                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-red-600 active:bg-red-500/15"
-                              onClick={() => remove(w.id)}
-                            >
-                              <Trash2 size={14} /> Удалить тренировку
-                            </button>
+                            <div className="mt-2 flex items-center justify-between">
+                              <button
+                                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-red-600 active:bg-red-500/15"
+                                onClick={() => remove(w.id)}
+                              >
+                                <Trash2 size={14} /> Удалить
+                              </button>
+                              <button
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-3 py-1.5 text-xs font-extrabold text-ink shadow-gold active:scale-95"
+                                onClick={() => workoutCard(w, history).then((b) => shareImage(b, `trenirovka-${w.date}.png`))}
+                              >
+                                <Share size={14} strokeWidth={2.6} /> Поделиться
+                              </button>
+                            </div>
                           </div>
                         </motion.div>
                       )}

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { StackView, rectOf, type Rect, type StackLayer } from '../../components/StackView';
 import { AnimatePresence, motion } from 'motion/react';
-import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Plus, Settings, SlidersHorizontal, Target } from 'lucide-react';
+import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Plus, Settings, Share, X, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
 import { setSetting, useSetting } from '../../db/settings';
 import { Button, Card, IconButton, PageHeader, BackButton } from '../../components/ui';
@@ -10,6 +10,8 @@ import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, allPrograms, findProgram, progr
 import { createCustomProgram, customDayStore, deleteCustomProgram, newDay, patchCustomProgram, useCustomPrograms } from '../../data/customPrograms';
 import { CustomProgramSheet } from './CustomProgramSheet';
 import { TechniqueSheet, hasTechnique } from './TechniqueSheet';
+import { shareImage, workoutCard } from '../../lib/shareCard';
+import { BounceTrophy } from '../../components/LiveIcons';
 import { scrollToTop } from '../../lib/smoothScroll';
 import { useBackEntry } from '../../lib/backNav';
 import { createWorkout, formatTarget, nextDayId } from '../../lib/workout';
@@ -195,6 +197,16 @@ function CatalogHome({
   onCreate: () => void;
 }) {
   const [settings, setSettings] = useState(false);
+  const [finishedId, setFinishedId] = useState<number | null>(() => {
+    try {
+      const v = sessionStorage.getItem('justFinished');
+      sessionStorage.removeItem('justFinished');
+      return v ? Number(v) : null;
+    } catch {
+      return null;
+    }
+  });
+  const finished = finishedId ? history.find((w) => w.id === finishedId) : undefined;
   const mine = findProgram(activeProgramId);
   const nextId = nextDayId(days, history.filter((w) => days.some((d) => d.id === w.dayId)));
   const next = days.find((d) => d.id === nextId);
@@ -216,6 +228,30 @@ function CatalogHome({
         }
       />
       <div className="space-y-3 px-4 pb-6">
+        {finished && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="flex items-center gap-3 rounded-2xl bg-gold px-4 py-3 text-ink shadow-gold"
+          >
+            <BounceTrophy size={24} className="shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="font-extrabold">Тренировка завершена!</div>
+              <div className="truncate text-xs font-bold opacity-70">
+                {finished.dayName} · {finished.dayTitle}
+              </div>
+            </div>
+            <button
+              onClick={() => workoutCard(finished, history).then((b) => shareImage(b, `trenirovka-${finished.date}.png`))}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-navy px-3 py-2 text-xs font-extrabold text-white active:scale-95"
+            >
+              <Share size={14} strokeWidth={2.6} /> Поделиться
+            </button>
+            <button onClick={() => setFinishedId(null)} aria-label="Скрыть" className="-mr-1 grid h-7 w-7 shrink-0 place-items-center rounded-full active:bg-black/10">
+              <X size={16} strokeWidth={2.6} />
+            </button>
+          </motion.div>
+        )}
         <Item>
           <div data-tile="dark" className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-2 via-navy to-[#071636] p-5 text-white shadow-lift">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/[.06]" />
