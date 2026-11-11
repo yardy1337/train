@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { StackView, type StackLayer } from '../../components/StackView';
 import { AnimatePresence, motion } from 'motion/react';
 import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
@@ -59,45 +60,58 @@ export function WorkoutsPage() {
   const currentId = pinnedId ?? lastUsedId;
   const togglePin = (id: string) => setSetting(PINNED_KEY, pinnedId === id ? null : id);
 
-  let content: ReactNode = null;
+  // Стек экранов как на iPhone: главный внизу, программа / редактор / история — слоями поверх.
+  const layers: StackLayer[] = [];
+  if (view.name === 'program' || view.name === 'editor') {
+    const pid = view.name === 'program' ? view.id : activeProgramId;
+    const program = findProgram(pid);
+    layers.push({
+      key: `program-${pid}`,
+      node: (
+        <ProgramPage
+          program={program}
+          isCurrent={pid === currentId}
+          pinned={pid === pinnedId}
+          onTogglePin={() => togglePin(pid)}
+          canEdit={pid === activeProgramId}
+          days={daysOf(program)}
+          history={history}
+          onBack={() => setView({ name: 'home' })}
+          onEdit={() => setView({ name: 'editor' })}
+          onStart={start}
+        />
+      ),
+    });
+  }
   if (view.name === 'editor')
-    content = <ProgramEditor key="editor" onBack={() => setView({ name: 'program', id: activeProgramId })} />;
-  else if (view.name === 'history') content = <WorkoutHistory key="history" onBack={() => setView({ name: 'home' })} />;
-  else if (active) content = <ActiveWorkout key={`active-${active.id}`} initial={active} history={history} />;
-  else if (active === null && view.name === 'program')
-    content = (
-      <ProgramPage
-        key={`program-${view.id}`}
-        program={findProgram(view.id)}
-        isCurrent={view.id === currentId}
-        pinned={view.id === pinnedId}
-        onTogglePin={() => togglePin(view.id)}
-        canEdit={view.id === activeProgramId}
-        days={daysOf(findProgram(view.id))}
-        history={history}
-        onBack={() => setView({ name: 'home' })}
-        onEdit={() => setView({ name: 'editor' })}
-        onStart={start}
-      />
-    );
-  else if (active === null)
-    content = (
-      <CatalogHome
-        key="home"
-        days={daysOf(findProgram(currentId))}
-        history={history}
-        activeProgramId={currentId}
-        pinnedId={pinnedId}
-        onOpen={(id) => setView({ name: 'program', id })}
-        onHistory={() => setView({ name: 'history' })}
-        onStart={start}
-      />
-    );
+    layers.push({ key: 'editor', node: <ProgramEditor onBack={() => setView({ name: 'program', id: activeProgramId })} /> });
+  if (view.name === 'history') layers.push({ key: 'history', node: <WorkoutHistory onBack={() => setView({ name: 'home' })} /> });
 
   return (
     <motion.div exit={{ opacity: 0, y: -6, transition: { duration: 0.14 } }}>
       <AnimatePresence mode="wait" onExitComplete={scrollToTop}>
-        {content}
+        {active ? (
+          <ActiveWorkout key={`active-${active.id}`} initial={active} history={history} />
+        ) : active === null ? (
+          <motion.div key="stack" exit={{ opacity: 0, transition: { duration: 0.14 } }}>
+            <StackView
+              // Свайп от края: экран уже уехал — дальше обычный «назад» через историю.
+              onSwipeBack={() => window.history.back()}
+              layers={layers}
+              base={
+                <CatalogHome
+                  days={daysOf(findProgram(currentId))}
+                  history={history}
+                  activeProgramId={currentId}
+                  pinnedId={pinnedId}
+                  onOpen={(id) => setView({ name: 'program', id })}
+                  onHistory={() => setView({ name: 'history' })}
+                  onStart={start}
+                />
+              }
+            />
+          </motion.div>
+        ) : null}
       </AnimatePresence>
     </motion.div>
   );

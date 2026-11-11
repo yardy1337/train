@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { animate, motion, useInView, type Transition, type Variants } from 'motion/react';
+import { useInStackLayer } from './StackView';
 
 /** Общая «мягкая» кривая: быстрый старт, долгое плавное торможение. */
 export const EASE = [0.22, 1, 0.36, 1] as const;
@@ -32,6 +33,9 @@ const screenVariants: Record<'fade' | 'push', Variants> = {
 
 /** Обёртка экрана: плавное появление и уход при смене вкладки или раздела. */
 export function Screen({ children, kind = 'fade' }: { children: ReactNode; kind?: 'fade' | 'push' }) {
+  // Внутри слоя навигации экран уже выезжает вместе со слоем — своя анимация не нужна.
+  const inLayer = useInStackLayer();
+  if (inLayer) return <div>{children}</div>;
   return (
     <motion.div variants={screenVariants[kind]} initial="hidden" animate="show" exit="exit">
       {children}

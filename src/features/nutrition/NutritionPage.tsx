@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { StackView } from '../../components/StackView';
 import { useBackEntry } from '../../lib/backNav';
-import { scrollToTop } from '../../lib/smoothScroll';
 import { AnimatePresence, motion } from 'motion/react';
 import { EASE, Screen } from '../../components/motion';
 import { CalorieRing } from '../../components/CalorieRing';
@@ -53,18 +53,28 @@ export function NutritionPage() {
 
   return (
     <motion.div exit={{ opacity: 0, y: -6, transition: { duration: 0.14 } }}>
-      <AnimatePresence mode="wait" onExitComplete={scrollToTop}>
-      {view === 'history' ? (
-        <NutritionHistory
-          key="history"
-          onBack={() => setView('day')}
-          onOpenDay={(d) => {
-            setDate(d);
-            setView('day');
-          }}
-        />
-      ) : (
-      <Screen key="day">
+      <StackView
+        onSwipeBack={() => window.history.back()}
+        layers={
+          view === 'history'
+            ? [
+                {
+                  key: 'history',
+                  node: (
+                    <NutritionHistory
+                      onBack={() => setView('day')}
+                      onOpenDay={(d) => {
+                        setDate(d);
+                        setView('day');
+                      }}
+                    />
+                  ),
+                },
+              ]
+            : []
+        }
+        base={
+      <Screen>
       <PageHeader
         title="Питание"
         right={
@@ -184,8 +194,8 @@ export function NutritionPage() {
         })}
       </div>
       </Screen>
-      )}
-      </AnimatePresence>
+        }
+      />
 
       <FoodPicker
         open={pickerMeal !== null}
