@@ -1,5 +1,5 @@
 import { Screen } from '../../components/motion';
-import { ArrowDown, ArrowLeftRight, ArrowUp, Check, Disc3, Flame, Lightbulb, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp, Trophy } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, Check, Disc3, Info, Flame, Lightbulb, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp, Trophy } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../../db/db';
@@ -17,6 +17,7 @@ import { bestMap, formatBest, isRecord } from '../../lib/records';
 import { fmtKg, isBarbell, suggestWeight, warmupSets } from '../../lib/training';
 import { useFeature } from '../../lib/features';
 import { PlateSheet } from './PlateSheet';
+import { TechniqueSheet, hasTechnique } from './TechniqueSheet';
 
 export function ActiveWorkout({ initial, history }: { initial: Workout; history: Workout[] }) {
   const [w, setW] = useState<Workout>(initial);
@@ -81,6 +82,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
   const featPlates = useFeature('plates');
   const featWarmup = useFeature('warmup');
   const [plateFor, setPlateFor] = useState<number | null | undefined>(undefined);
+  const [techFor, setTechFor] = useState<string | null>(null);
 
   const toggleDone = (i: number, si: number) => {
     const ex = w.exercises[i];
@@ -221,7 +223,14 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
             <Card key={ex.exerciseId} index={i}>
               <div className="flex items-start gap-2">
                 <div className="flex-1">
-                  <h3 className="text-base font-extrabold leading-tight">{ex.name}</h3>
+                  {hasTechnique(ex.name) ? (
+                    <button onClick={() => setTechFor(ex.name)} className="flex items-start gap-1.5 text-left">
+                      <h3 className="text-base font-extrabold leading-tight">{ex.name}</h3>
+                      <Info size={16} strokeWidth={2.4} className="mt-0.5 shrink-0 text-fg/35" aria-label="Техника" />
+                    </button>
+                  ) : (
+                    <h3 className="text-base font-extrabold leading-tight">{ex.name}</h3>
+                  )}
                   <div className="mt-0.5 text-xs text-fg/55">
                     {ex.plannedSets}×{formatReps(ex.repsMin, ex.repsMax, ex.note)}
                     {ex.note && (ex.repsMin || ex.repsMax) ? ` · ${ex.note}` : ''} · отдых {ex.rest} с
@@ -425,6 +434,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
         />
       )}
 
+      <TechniqueSheet name={techFor} onClose={() => setTechFor(null)} />
       <PlateSheet open={plateFor !== undefined} initial={plateFor ?? null} onClose={() => setPlateFor(undefined)} />
 
       {/* Рекорд */}

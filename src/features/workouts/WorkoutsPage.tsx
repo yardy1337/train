@@ -9,6 +9,7 @@ import { Item, Screen } from '../../components/motion';
 import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, allPrograms, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
 import { createCustomProgram, customDayStore, deleteCustomProgram, newDay, patchCustomProgram, useCustomPrograms } from '../../data/customPrograms';
 import { CustomProgramSheet } from './CustomProgramSheet';
+import { TechniqueSheet, hasTechnique } from './TechniqueSheet';
 import { scrollToTop } from '../../lib/smoothScroll';
 import { useBackEntry } from '../../lib/backNav';
 import { createWorkout, formatTarget, nextDayId } from '../../lib/workout';
@@ -344,6 +345,7 @@ function ProgramPage({
   onEdit: () => void;
   onStart: (d: ProgramDay) => void;
 }) {
+  const [tech, setTech] = useState<string | null>(null);
   const own = history.filter((w) => days.some((d) => d.id === w.dayId));
   const nextId = nextDayId(days, own);
   const lastByDay = (id: string) => own.find((w) => w.dayId === id);
@@ -429,7 +431,13 @@ function ProgramPage({
                 {d.exercises.map((e) => (
                   <li key={e.id} className="flex gap-2">
                     <span className="flex-1 font-medium text-fg/80">
-                      {e.name}
+                      {hasTechnique(e.name) ? (
+                        <button onClick={() => setTech(e.name)} className="inline text-left underline decoration-fg/20 decoration-dotted underline-offset-4">
+                          {e.name}
+                        </button>
+                      ) : (
+                        e.name
+                      )}
                       {e.note && (e.repsMin || e.repsMax) ? <span className="text-fg/40"> · {e.note}</span> : null}
                     </span>
                     <span className="font-semibold tabular-nums text-fg/40">{formatTarget(e.sets, e.repsMin, e.repsMax, e.note)}</span>
@@ -440,7 +448,7 @@ function ProgramPage({
           );
         })}
       </div>
-
+      <TechniqueSheet name={tech} onClose={() => setTech(null)} />
     </Screen>
   );
 }
