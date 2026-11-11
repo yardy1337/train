@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Card, Segmented } from '../../components/ui';
 import { MuscleMap as BodyMap, type Highlight, type MuscleGroup } from 'js-rich-body-highlighter/react';
 import { useFeature } from '../../lib/features';
+import { MuscleSheet } from './MuscleSheet';
 import { pluralRu } from '../../lib/format';
 import { MUSCLES, TARGET, weeklySets, type Muscle } from '../../lib/muscles';
 import { useHistory } from '../workouts/hooks';
@@ -111,7 +112,7 @@ export function MuscleMap({ index }: { index: number }) {
             hoverHighlight={false}
             onMuscleClick={(t) => {
               const m = muscleOfGroup(t.group);
-              if (m) setSelected(selected === m ? null : m);
+              if (m) setSelected(m);
             }}
           />
         </div>
@@ -122,7 +123,7 @@ export function MuscleMap({ index }: { index: number }) {
           {worked.map((m) => (
             <button
               key={m}
-              onClick={() => setSelected(selected === m ? null : m)}
+              onClick={() => setSelected(m)}
               className={`flex w-full items-start gap-2 rounded-xl px-2 py-1.5 text-left transition-colors ${selected === m ? 'bg-accent-soft' : 'active:bg-fg/[.04]'}`}
             >
               <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: sets[m] ? tint(sets[m]) : color(0) }} />
@@ -139,18 +140,21 @@ export function MuscleMap({ index }: { index: number }) {
           ))}
           {idle.length > 0 && worked.length > 0 && (
             <div className="px-2 pt-1 text-[11px] font-semibold leading-snug text-fg/40">
-              Не было: {idle.map((m) => m.toLowerCase()).join(', ')}
+              Не было:{' '}
+              {idle.map((m, i) => (
+                <span key={m}>
+                  <button onClick={() => setSelected(m)} className="underline decoration-dotted underline-offset-2">
+                    {m.toLowerCase()}
+                  </button>
+                  {i < idle.length - 1 ? ', ' : ''}
+                </span>
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {selected && (
-        <div className="rounded-xl bg-fg/[.04] px-3 py-2 text-sm font-bold">
-          {selected}: <span className="tabular-nums">{sets[selected]}</span> {pluralRu(sets[selected], 'подход', 'подхода', 'подходов')} · {status(sets[selected])}
-          <div className="text-xs font-medium text-fg/50">{PARTS[selected]}</div>
-        </div>
-      )}
+      <MuscleSheet muscle={selected} sets={selected ? sets[selected] : 0} parts={selected ? PARTS[selected] : ''} onClose={() => setSelected(null)} />
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-fg/50">
         {[

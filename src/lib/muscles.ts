@@ -47,3 +47,18 @@ export function weeklySets(history: Workout[]): Record<Muscle, number> {
 
 /** Рекомендуемый объём для роста мышц: примерно 10–20 рабочих подходов в неделю. */
 export const TARGET = { min: 10, max: 20 };
+
+/** Подходы на мышцу по неделям (пн–вс), от старых к новым; последняя — текущая неделя. */
+export function weeklyHistory(history: Workout[], muscle: Muscle, weeks = 8): { start: string; sets: number }[] {
+  const today = todayISO();
+  const dow = (new Date().getDay() + 6) % 7;
+  const monday = addDays(today, -dow);
+  const out = Array.from({ length: weeks }, (_, i) => ({ start: addDays(monday, -7 * (weeks - 1 - i)), sets: 0 }));
+  for (const w of history) {
+    if (w.status !== 'done') continue;
+    const idx = out.findIndex((x, i) => w.date >= x.start && (i === out.length - 1 || w.date < out[i + 1].start));
+    if (idx < 0) continue;
+    for (const e of w.exercises) if (muscleOf(e.name) === muscle) out[idx].sets += doneSets(e.sets).length;
+  }
+  return out;
+}
