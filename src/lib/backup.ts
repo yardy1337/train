@@ -1,6 +1,7 @@
 import { ALL_TABLES, db } from '../db/db';
 import { initDb } from '../db/init';
 import { todayISO } from './date';
+import { applyTheme } from './features';
 
 const APP_ID = 'my-trainer';
 
@@ -40,10 +41,12 @@ export async function importData(file: File) {
     for (const t of ALL_TABLES) {
       await db.table(t).clear();
       const rows = json.data[t];
-      if (Array.isArray(rows) && rows.length) await db.table(t).bulkPut(rows);
+      if (Array.isArray(rows) && rows.length) await db.table(t).bulkPut(rows as never[]);
     }
   });
   // Встроенная база продуктов должна быть на месте: принудительно досеиваем.
   await db.settings.delete('foodsSeedVersion');
   await initDb();
+  const dark = await db.settings.get('feature:dark');
+  applyTheme(dark?.value === true);
 }

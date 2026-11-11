@@ -111,7 +111,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
         <div className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] z-40 px-3">
           <div
             className={`relative mx-auto flex max-w-lg items-center gap-2 overflow-hidden rounded-2xl px-4 py-3 shadow-xl ${
-              finished ? 'bg-gold text-fg' : 'bg-navy text-white'
+              finished ? 'bg-gold text-ink' : 'bg-navy text-white'
             }`}
             role="timer"
           >

@@ -11,7 +11,7 @@ export function CalorieRing({ value, goal, size = 132 }: { value: number; goal: 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(11 31 75 / 0.07)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" className="stroke-fg/[.07]" strokeWidth={stroke} />
         <motion.circle
           cx={size / 2}
           cy={size / 2}

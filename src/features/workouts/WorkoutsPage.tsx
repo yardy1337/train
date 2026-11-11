@@ -177,7 +177,7 @@ function CatalogHome({
                 </div>
                 <button
                   onClick={() => onStart(next)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2.5 text-sm font-extrabold text-fg shadow-gold transition-transform active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2.5 text-sm font-extrabold text-ink shadow-gold transition-transform active:scale-95"
                 >
                   <Play size={14} fill="currentColor" /> Начать
                 </button>
@@ -203,7 +203,7 @@ function CatalogHome({
                 <div className="flex items-center gap-2">
                   <span className="truncate text-lg font-extrabold tracking-tight">{p.name}</span>
                   {p.id === pinnedId ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-ink">
                       <Pin size={10} strokeWidth={3} /> закреплена
                     </span>
                   ) : (
@@ -282,7 +282,7 @@ function ProgramPage({
               label={pinned ? 'Открепить программу' : 'Закрепить программу'}
               onClick={onTogglePin}
               aria-pressed={pinned}
-              className={pinned ? 'bg-gold text-navy active:bg-gold-strong' : 'bg-white/10 text-white active:bg-white/20'}
+              className={pinned ? 'bg-gold text-ink active:bg-gold-strong' : 'bg-white/10 text-white active:bg-white/20'}
             >
               {pinned ? <PinOff size={18} /> : <Pin size={18} />}
             </IconButton>
@@ -320,7 +320,7 @@ function ProgramPage({
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-extrabold tracking-tight">{d.name}</h2>
                     {isNext && (
-                      <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-fg">
+                      <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-ink">
                         следующая
                       </span>
                     )}

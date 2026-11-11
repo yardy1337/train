@@ -105,6 +105,18 @@ export interface WeightEntry {
   weight: number;
 }
 
+/** Замеры тела, см, и фото (сжатое JPEG, data URL). */
+export interface Measurement {
+  id?: number;
+  date: string;
+  chest?: number;
+  waist?: number;
+  arm?: number;
+  hips?: number;
+  thigh?: number;
+  photo?: string;
+}
+
 export interface Setting {
   key: string;
   value: unknown;

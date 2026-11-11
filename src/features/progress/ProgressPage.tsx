@@ -1,34 +1,60 @@
 import { Screen } from '../../components/motion';
-import { X } from 'lucide-react';
+import { Settings, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { db } from '../../db/db';
-import { Button, Card, Empty, Field, NumInput, PageHeader, Segmented, TextInput } from '../../components/ui';
+import { Button, Card, Empty, Field, IconButton, NumInput, PageHeader, Segmented, TextInput } from '../../components/ui';
+import { Records } from './Records';
+import { Measurements } from './Measurements';
+import { SettingsSheet } from '../settings/SettingsSheet';
 import { formatShort, todayISO } from '../../lib/date';
 import { fmt } from '../../lib/format';
 import { calcPace, exerciseNames, exerciseSeries } from '../../lib/progress';
 import { downloadBackup, importData } from '../../lib/backup';
 import type { WeightEntry } from '../../types';
 import { useHistory } from '../workouts/hooks';
+import { useFeature } from '../../lib/features';
 
 const EMPTY: WeightEntry[] = [];
 
-const axis = { stroke: 'rgb(11 31 75 / 0.4)', fontSize: 11, tickLine: false, axisLine: false } as const;
-const tooltipStyle = {
-  contentStyle: { background: '#fff', color: '#0b1f4b', border: '1px solid rgb(11 31 75 / 0.08)', borderRadius: 12, fontSize: 12, fontWeight: 600, boxShadow: '0 8px 24px -8px rgb(11 31 75 / 0.18)' },
-  labelStyle: { color: 'rgb(11 31 75 / 0.5)' },
-};
+/** Цвета графиков под текущую тему (в SVG-атрибутах CSS-переменные не работают). */
+function useChart() {
+  const dark = useFeature('dark');
+  const fg = dark ? '232 236 246' : '11 31 75';
+  return {
+    line: dark ? '#8fa8e8' : '#0b1f4b',
+    dotFill: dark ? '#0d1a3b' : '#fff',
+    grid: `rgb(${fg} / 0.08)`,
+    axis: { stroke: `rgb(${fg} / 0.45)`, fontSize: 11, tickLine: false, axisLine: false } as const,
+    tooltip: {
+      contentStyle: { background: 'var(--color-surface)', color: 'var(--color-fg)', border: `1px solid rgb(${fg} / 0.1)`, borderRadius: 12, fontSize: 12, fontWeight: 600, boxShadow: '0 8px 24px -8px rgb(0 0 0 / 0.25)' },
+      labelStyle: { color: `rgb(${fg} / 0.5)` },
+    },
+  };
+}
 
 export function ProgressPage() {
+  const [settings, setSettings] = useState(false);
+  const measurements = useFeature('measurements');
   return (
     <Screen>
-      <PageHeader title="Прогресс" />
+      <PageHeader
+        title="Прогресс"
+        right={
+          <IconButton label="Настройки" onClick={() => setSettings(true)} className="bg-white/10 text-white active:bg-white/20">
+            <Settings size={18} />
+          </IconButton>
+        }
+      />
       <div className="space-y-3 px-4 pb-4">
         <BodyWeight />
+        {measurements && <Measurements index={2} />}
+        <Records index={2} />
         <ExerciseProgress />
         <Backup />
       </div>
+      <SettingsSheet open={settings} onClose={() => setSettings(false)} />
     </Screen>
   );
 }
@@ -39,6 +65,7 @@ function BodyWeight() {
   const [weight, setWeight] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const pace = useMemo(() => calcPace(entries), [entries]);
+  const ch = useChart();
 
   const save = async () => {
     if (!weight || weight < 30 || weight > 300) return;
@@ -90,11 +117,11 @@ function BodyWeight() {
         <div className="h-48 -ml-3">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="rgb(11 31 75 / 0.06)" vertical={false} />
-              <XAxis dataKey="date" {...axis} minTickGap={16} />
-              <YAxis {...axis} width={40} domain={['dataMin - 1', 'dataMax + 1']} tickFormatter={(v) => fmt(v, 1)} />
-              <Tooltip {...tooltipStyle} formatter={(v) => [`${fmt(Number(v))} кг`, 'Вес']} />
-              <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke="#0b1f4b" strokeWidth={2.5} dot={{ r: 3, fill: '#fff', stroke: '#0b1f4b', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+              <CartesianGrid stroke={ch.grid} vertical={false} />
+              <XAxis dataKey="date" {...ch.axis} minTickGap={16} />
+              <YAxis {...ch.axis} width={40} domain={['dataMin - 1', 'dataMax + 1']} tickFormatter={(v) => fmt(v, 1)} />
+              <Tooltip {...ch.tooltip} formatter={(v) => [`${fmt(Number(v))} кг`, 'Вес']} />
+              <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke={ch.line} strokeWidth={2.5} dot={{ r: 3, fill: ch.dotFill, stroke: ch.line, strokeWidth: 2 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -144,6 +171,7 @@ function ExerciseProgress() {
   const data = series.map((p) => ({ ...p, label: formatShort(p.date) }));
   const first = series[0];
   const last = series[series.length - 1];
+  const ch = useChart();
 
   return (
     <Card index={2} className="space-y-3">
@@ -187,11 +215,11 @@ function ExerciseProgress() {
           <div className="h-52 -ml-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="rgb(11 31 75 / 0.06)" vertical={false} />
-                <XAxis dataKey="label" {...axis} minTickGap={16} />
-                <YAxis {...axis} width={40} domain={['auto', 'auto']} tickFormatter={(v) => fmt(v, 0)} />
-                <Tooltip {...tooltipStyle} formatter={(v) => [`${fmt(Number(v))} кг`, metric === 'weight' ? 'Вес' : '1ПМ']} />
-                <Line isAnimationActive={false} type="monotone" dataKey={metric} stroke="#c9a227" strokeWidth={2.5} dot={{ r: 3, fill: '#fff', stroke: '#c9a227', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                <CartesianGrid stroke={ch.grid} vertical={false} />
+                <XAxis dataKey="label" {...ch.axis} minTickGap={16} />
+                <YAxis {...ch.axis} width={40} domain={['auto', 'auto']} tickFormatter={(v) => fmt(v, 0)} />
+                <Tooltip {...ch.tooltip} formatter={(v) => [`${fmt(Number(v))} кг`, metric === 'weight' ? 'Вес' : '1ПМ']} />
+                <Line isAnimationActive={false} type="monotone" dataKey={metric} stroke="#c9a227" strokeWidth={2.5} dot={{ r: 3, fill: ch.dotFill, stroke: '#c9a227', strokeWidth: 2 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

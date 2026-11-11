@@ -12,7 +12,7 @@ const variants: Record<Variant, string> = {
   primary: 'bg-accent text-white font-bold shadow-lift active:bg-accent-strong',
   secondary: 'bg-accent-soft text-fg font-semibold active:bg-fg/10',
   ghost: 'bg-transparent text-fg/70 font-semibold active:bg-fg/[.06]',
-  gold: 'bg-gold text-navy font-extrabold shadow-gold active:bg-gold-strong',
+  gold: 'bg-gold text-ink font-extrabold shadow-gold active:bg-gold-strong',
   danger: 'bg-red-500/15 text-red-600 font-semibold active:bg-red-500/25',
 };
 

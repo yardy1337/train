@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Flame } from 'lucide-react';
 import { Card } from '../../components/ui';
 import { addDays, parseISODate, todayISO } from '../../lib/date';
 import { pluralRu } from '../../lib/format';
@@ -55,11 +55,19 @@ export function WeekStrip({ history, plan, index }: { history: Workout[]; plan: 
       <div className="h-1.5 overflow-hidden rounded-full bg-fg/[.07]">
         <div className="h-full rounded-full bg-gold transition-[width] duration-700" style={{ width: `${Math.min(100, (count / Math.max(1, plan)) * 100)}%` }} />
       </div>
-      {streak > 1 && (
-        <div className="text-xs font-bold text-fg/55">
-          Серия: {streak} {pluralRu(streak, 'неделя', 'недели', 'недель')} подряд по плану
+      <div className="flex items-center gap-2.5 rounded-xl bg-gold-soft px-3 py-2">
+        <Flame size={20} strokeWidth={2.4} className={streak ? 'text-gold-strong' : 'text-fg/30'} />
+        <div className="min-w-0 flex-1 text-xs font-bold leading-tight">
+          {streak ? (
+            <>
+              Серия: <span className="text-sm font-extrabold">{streak} {pluralRu(streak, 'неделя', 'недели', 'недель')}</span> подряд по плану
+            </>
+          ) : (
+            <span className="text-fg/60">Выполни план этой недели — начнётся серия</span>
+          )}
         </div>
-      )}
+        {streak > 0 && count < plan && <span className="shrink-0 text-[11px] font-bold text-fg/50">ещё {plan - count}</span>}
+      </div>
     </Card>
   );
 }

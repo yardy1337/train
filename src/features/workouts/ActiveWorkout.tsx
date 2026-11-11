@@ -1,5 +1,6 @@
 import { Screen } from '../../components/motion';
-import { ArrowDown, ArrowLeftRight, ArrowUp, Check, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, Check, Disc3, Flame, Lightbulb, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp, Trophy } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../../db/db';
 import { Button, Card, Field, NumInput, PageHeader, Sheet, TextInput } from '../../components/ui';
@@ -11,6 +12,11 @@ import { useRestTimer } from '../../components/RestTimer';
 import { findLastResult, formatReps, formatSets, shouldIncrease } from '../../lib/workout';
 import { formatDuration, formatShort } from '../../lib/date';
 import type { SetEntry, Workout, WorkoutExercise } from '../../types';
+import { normName } from '../../lib/workout';
+import { bestMap, formatBest, isRecord } from '../../lib/records';
+import { fmtKg, isBarbell, suggestWeight, warmupSets } from '../../lib/training';
+import { useFeature } from '../../lib/features';
+import { PlateSheet } from './PlateSheet';
 
 export function ActiveWorkout({ initial, history }: { initial: Workout; history: Workout[] }) {
   const [w, setW] = useState<Workout>(initial);
@@ -62,6 +68,20 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
     [history, w.exercises, w.id],
   );
 
+  // Личные рекорды до сегодняшней тренировки.
+  const best = useMemo(() => bestMap(history, w.id), [history, w.id]);
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const featSuggest = useFeature('suggest');
+  const featPlates = useFeature('plates');
+  const featWarmup = useFeature('warmup');
+  const [plateFor, setPlateFor] = useState<number | null | undefined>(undefined);
+
   const toggleDone = (i: number, si: number) => {
     const ex = w.exercises[i];
     const s = ex.sets[si];
@@ -71,6 +91,11 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
     const reps = s.reps ?? prevSet?.reps ?? (ex.repsMax || ex.repsMin || null);
     const weight = s.weight ?? prevSet?.weight ?? null;
     updateSet(i, si, { done: true, reps, weight });
+    const b = best.get(normName(ex.name));
+    if (isRecord({ done: true, reps, weight }, b) && !ex.sets.some((x, k) => k !== si && isRecord(x, b) && (x.weight ?? 0) >= (weight ?? 0))) {
+      navigator.vibrate?.([40, 60, 40]);
+      setToast(`Новый рекорд: ${ex.name} — ${weight ? `${fmtKg(weight)} кг × ${reps}` : `${reps} повт.`}`);
+    }
     const isLastSetOfLastEx = i === w.exercises.length - 1 && si === ex.sets.length - 1;
     if (!isLastSetOfLastEx) timer.start(ex.rest, `Отдых · ${ex.name}`);
   };
@@ -202,7 +227,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                     {ex.note && (ex.repsMin || ex.repsMax) ? ` · ${ex.note}` : ''} · отдых {ex.rest} с
                   </div>
                 </div>
-                {increaseNow && (
+                {increaseNow && !featSuggest && (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gold-soft px-2.5 py-1 text-xs font-bold text-fg">
                     <TrendingUp size={14} strokeWidth={2.6} /> Увеличь вес
                   </span>
@@ -216,6 +241,26 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                 </button>
               </div>
 
+              {featSuggest && (() => {
+                const sg = suggestWeight(ex, last?.exercise);
+                if (!sg) return null;
+                const applied = ex.sets.every((s) => s.done || s.weight === sg.weight);
+                return (
+                  <div className={`mt-3 flex items-center gap-2 rounded-xl px-3 py-2 ${sg.up ? 'bg-gold-soft' : 'bg-accent-soft'}`}>
+                    {sg.up ? <TrendingUp size={16} strokeWidth={2.6} className="shrink-0 text-gold-strong" /> : <Lightbulb size={16} strokeWidth={2.4} className="shrink-0 text-fg/60" />}
+                    <span className="flex-1 text-xs font-bold">{sg.text}</span>
+                    {!applied && (
+                      <button
+                        className="shrink-0 rounded-lg bg-surface px-2.5 py-1 text-xs font-extrabold shadow-card active:scale-95"
+                        onClick={() => updateEx(i, (e) => ({ ...e, sets: e.sets.map((s) => (s.done ? s : { ...s, weight: sg.weight })) }))}
+                      >
+                        Подставить
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="mt-3 rounded-xl bg-bg px-3 py-2 text-xs font-medium text-fg/55">
                 {last ? (
                   <>
@@ -225,7 +270,15 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                 ) : (
                   'Прошлых результатов нет — подбери рабочий вес'
                 )}
+                {best.get(normName(ex.name)) && (
+                  <span className="mt-0.5 flex items-center gap-1">
+                    <Trophy size={12} strokeWidth={2.6} className="text-gold" /> Рекорд:{' '}
+                    <span className="font-bold text-fg">{formatBest(best.get(normName(ex.name))!)}</span>
+                  </span>
+                )}
               </div>
+
+              {featWarmup && <Warmup ex={ex} />}
 
               <div className="mt-3 grid grid-cols-[1.5rem_1fr_1fr_2.75rem] items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-fg/40">
                 <span>#</span>
@@ -243,7 +296,11 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                         s.done ? 'bg-accent-soft/70' : ''
                       }`}
                     >
-                      <span className="text-center text-sm font-bold text-fg/40">{si + 1}</span>
+                      {isRecord(s, best.get(normName(ex.name))) ? (
+                        <Trophy size={16} strokeWidth={2.6} className="mx-auto text-gold" aria-label="Рекорд" />
+                      ) : (
+                        <span className="text-center text-sm font-bold text-fg/40">{si + 1}</span>
+                      )}
                       <NumInput
                         ariaLabel={`Вес, подход ${si + 1}`}
                         value={s.weight}
@@ -291,6 +348,14 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                     − подход
                   </button>
                 )}
+                {featPlates && isBarbell(ex.name) && (
+                  <button
+                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-fg/60 active:bg-fg/[.06]"
+                    onClick={() => setPlateFor(ex.sets.find((s) => !s.done)?.weight ?? ex.sets[0]?.weight ?? null)}
+                  >
+                    <Disc3 size={14} strokeWidth={2.4} /> Блины
+                  </button>
+                )}
                 <span className="flex-1" />
                 {topReachedToday && (
                   <span className="text-xs font-bold text-accent">Верх диапазона взят — в след. раз +вес</span>
@@ -313,6 +378,13 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           <div className="space-y-1.5">
             <MenuItem icon={<ArrowLeftRight size={18} />} label="Заменить на похожее" hint="Тренажёр занят, нет снаряда, неудобно" onClick={() => { const i = menuFor; openTool(() => setSwapFor(i)); }} />
             <MenuItem icon={<SlidersHorizontal size={18} />} label="Подходы, повторы, отдых" onClick={() => { const i = menuFor; openTool(() => setAdjustFor(i)); }} />
+            {featPlates && (
+              <MenuItem
+                icon={<Disc3 size={18} />}
+                label="Калькулятор блинов"
+                onClick={() => { const ex = w.exercises[menuFor]; setMenuFor(null); setPlateFor(ex.sets.find((s) => !s.done)?.weight ?? ex.sets[0]?.weight ?? null); }}
+              />
+            )}
             <div className="grid grid-cols-2 gap-1.5">
               <MenuItem icon={<ArrowUp size={18} />} label="Выше" disabled={menuFor === 0} onClick={() => { move(menuFor, -1); setMenuFor(null); }} />
               <MenuItem icon={<ArrowDown size={18} />} label="Ниже" disabled={menuFor === w.exercises.length - 1} onClick={() => { move(menuFor, 1); setMenuFor(null); }} />
@@ -352,6 +424,27 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           }}
         />
       )}
+
+      <PlateSheet open={plateFor !== undefined} initial={plateFor ?? null} onClose={() => setPlateFor(undefined)} />
+
+      {/* Рекорд */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.25 }}
+            className="pt-safe fixed inset-x-0 top-0 z-[60] px-3"
+            onClick={() => setToast(null)}
+          >
+            <div className="mx-auto mt-2 flex max-w-lg items-center gap-3 rounded-2xl bg-gold px-4 py-3 text-ink shadow-gold">
+              <Trophy size={22} strokeWidth={2.4} className="shrink-0" />
+              <span className="text-sm font-extrabold">{toast}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Добавить упражнение */}
       <Sheet open={addOpen} onClose={() => setAddOpen(false)} title="Добавить упражнение" lazy>
@@ -468,6 +561,30 @@ function AddExercise({
       )}
       <ProgramToggle checked={toProgram} onChange={setToProgram} text="Добавить и в программу" hint="Иначе — только в сегодняшнюю тренировку" />
       <ExercisePicker query={q} taken={taken} onPick={(e) => onPick(e.name, e)} />
+    </div>
+  );
+}
+
+/** Разминочные подходы перед рабочими: отмечаются только для себя, в историю не пишутся. */
+function Warmup({ ex }: { ex: WorkoutExercise }) {
+  const working = ex.sets.find((s) => (s.weight ?? 0) > 0)?.weight ?? null;
+  const sets = warmupSets(ex, working);
+  const [done, setDone] = useState<Set<number>>(new Set());
+  if (!sets.length || ex.sets.some((s) => s.done)) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="mr-0.5 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-fg/45">
+        <Flame size={13} strokeWidth={2.6} /> Разминка
+      </span>
+      {sets.map((s, k) => (
+        <button
+          key={k}
+          onClick={() => setDone((d) => { const n = new Set(d); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
+          className={`rounded-lg px-2 py-1 text-xs font-bold tabular-nums transition-colors ${done.has(k) ? 'bg-accent text-white' : 'bg-fg/[.06] text-fg/70'}`}
+        >
+          {fmtKg(s.weight)}×{s.reps}
+        </button>
+      ))}
     </div>
   );
 }

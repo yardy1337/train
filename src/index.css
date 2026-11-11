@@ -16,6 +16,7 @@
   --color-fg: #0b1f4b;
   --color-navy: #0b1f4b;
   --color-navy-2: #16306b;
+  --color-ink: #0b1f4b; /* текст на золоте — не меняется в тёмной теме */
 
   --color-accent: #0b1f4b;
   --color-accent-strong: #06132f;
@@ -37,6 +38,27 @@
 
 :root {
   color-scheme: light;
+}
+
+/* Тёмная тема (включается в настройках): глубокий тёмно-синий фон, светлый текст, то же золото. */
+html.dark {
+  color-scheme: dark;
+  --color-bg: #050c1f;
+  --color-surface: #0d1a3b;
+  --color-fg: #e8ecf6;
+  --color-navy: #12275c;
+  --color-navy-2: #1d3a80;
+  --color-accent: #2f55b3;
+  --color-accent-strong: #24448f;
+  --color-accent-soft: #1a2e63;
+  --color-gold-soft: #3a3214;
+  --color-protein: #8fa8e8;
+  --color-carbs: #6d82b8;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px -10px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 10px 24px -10px rgb(0 0 0 / 0.7);
+}
+
+:root {
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -69,7 +91,7 @@ input[type='number']::-webkit-outer-spin-button {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: rgb(11 31 75 / 0.45);
+  color: color-mix(in srgb, var(--color-fg) 45%, transparent);
 }
 
 /* Страница под открытой шторкой не прокручивается (без скачка позиции). */

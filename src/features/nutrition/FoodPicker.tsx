@@ -12,6 +12,7 @@ import { FoodRow } from './FoodRow';
 import { BarcodeScanner } from './BarcodeScanner';
 import { CustomFoodSheet } from './CustomFoodSheet';
 import { RecipeSheet } from './RecipeSheet';
+import { useFeature } from '../../lib/features';
 
 type Tab = 'search' | 'fav' | 'recent' | 'mine';
 
@@ -36,6 +37,8 @@ export function FoodPicker({
   const [scan, setScan] = useState(false);
   const [scanMsg, setScanMsg] = useState<string | null>(null);
   const [customOpen, setCustomOpen] = useState<{ food?: Food; barcode?: string } | null>(null);
+  // «Свои блюда» включаются в настройках.
+  const allowR = useFeature('recipes') && allowRecipes;
   const [recipeOpen, setRecipeOpen] = useState<{ food?: Food } | null>(null);
   const [cat, setCat] = useState<string | null>(null);
 
@@ -110,9 +113,9 @@ export function FoodPicker({
   const mine = useMemo(
     () =>
       foods
-        .filter((f) => f.source === 'custom' || (allowRecipes && f.source === 'recipe'))
+        .filter((f) => f.source === 'custom' || (allowR && f.source === 'recipe'))
         .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
-    [foods, allowRecipes],
+    [foods, allowR],
   );
 
 
@@ -186,9 +189,9 @@ export function FoodPicker({
               <Button className="flex-1" onClick={() => setCustomOpen({})}>
                 <Plus size={16} strokeWidth={2.6} /> Свой продукт
               </Button>
-              {allowRecipes && (
+              {allowR && (
                 <Button className="flex-1" onClick={() => setRecipeOpen({})}>
-                  <Plus size={16} strokeWidth={2.6} /> Рецепт
+                  <Plus size={16} strokeWidth={2.6} /> Блюдо
                 </Button>
               )}
             </div>
@@ -283,7 +286,7 @@ export function FoodPicker({
           if (!customOpen?.food) onPick(f);
         }}
       />
-      {allowRecipes && (
+      {allowR && (
         <RecipeSheet open={!!recipeOpen} food={recipeOpen?.food} onClose={() => setRecipeOpen(null)} />
       )}
     </>

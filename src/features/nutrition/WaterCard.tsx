@@ -19,7 +19,7 @@ export function WaterCard({ date, index }: { date: string; index: number }) {
   return (
     <Card index={index} className="space-y-3">
       <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e8f0fb] text-water">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-water/15 text-water">
           <GlassWater size={20} strokeWidth={2.2} />
         </span>
         <div className="flex-1">

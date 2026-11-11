@@ -42,7 +42,7 @@ export function RecipeSheet({ open, food, onClose }: { open: boolean; food?: Foo
   };
 
   const remove = async () => {
-    if (food && confirm(`Удалить рецепт «${food.name}»?`)) {
+    if (food && confirm(`Удалить блюдо «${food.name}»?`)) {
       await db.foods.delete(food.id);
       onClose();
     }
@@ -50,7 +50,7 @@ export function RecipeSheet({ open, food, onClose }: { open: boolean; food?: Foo
 
   return (
     <>
-      <Sheet open={open && !picker} onClose={onClose} title={food ? 'Рецепт' : 'Новый рецепт'} full>
+      <Sheet open={open && !picker} onClose={onClose} title={food ? 'Блюдо' : 'Новое блюдо'} full>
         <div className="space-y-3">
           <Field label="Название блюда">
             <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Например, овсянка с бананом" />
@@ -103,11 +103,11 @@ export function RecipeSheet({ open, food, onClose }: { open: boolean; food?: Foo
           </div>
 
           <Button variant="primary" className="w-full py-3" disabled={!name.trim() || !items.length} onClick={save}>
-            Сохранить рецепт
+            Сохранить блюдо
           </Button>
           {food && (
             <Button variant="danger" className="w-full" onClick={remove}>
-              Удалить рецепт
+              Удалить блюдо
             </Button>
           )}
         </div>
