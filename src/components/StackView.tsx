@@ -152,19 +152,16 @@ function Layer({
   const follow = useRef(!origin); // слой двигается вместе с x
   const ownX = useTransform(x, (v) => (follow.current ? v : 0));
   const p = useMotionValue(origin ? 0 : 1); // 0 — размером с плитку, 1 — весь экран
-  const clip = useTransform(p, (v) => {
-    if (!origin || v >= 1) return 'none';
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    const k = 1 - v;
-    const top = origin.top * k;
-    const left = origin.left * k;
-    const right = (W - origin.left - origin.width) * k;
-    const bottom = (H - origin.top - origin.height) * k;
-    return `inset(${top}px ${right}px ${bottom}px ${left}px round ${EXPAND_RADIUS * k}px)`;
-  });
-  // Пока плитка раскрывается, поверх — белая «карточка», содержимое проявляется.
-  const cover = useTransform(p, [0, 0.45], [1, 0]);
+  // Растёт отдельная пустая карточка (без clip-path: Safari с ним оставляет «залипшие» куски экрана),
+  // а сам экран проявляется поверх неё в конце.
+  const o = origin ?? { top: 0, left: 0, width: 0, height: 0 };
+  const cTop = useTransform(p, (v) => o.top * (1 - v));
+  const cLeft = useTransform(p, (v) => o.left * (1 - v));
+  const cW = useTransform(p, (v) => o.width + (window.innerWidth - o.width) * v);
+  const cH = useTransform(p, (v) => o.height + (window.innerHeight - o.height) * v);
+  const cR = useTransform(p, (v) => EXPAND_RADIUS * (1 - Math.min(1, v)));
+  const cVis = useTransform(p, (v) => (v >= 0.995 ? 0 : 1));
+  const fade = useTransform(p, [0.5, 0.95], [0, 1]);
 
   // Ведущий слой (верхний или уходящий) управляет общим положением:
   // по нему двигается экран под ним и затемнение.
@@ -269,10 +266,18 @@ function Layer({
   };
 
   return (
+    <>
+    {origin && (
+      <motion.div
+        aria-hidden
+        className={`pointer-events-none fixed z-[25] shadow-[0_20px_50px_-12px_rgb(0_0_0/0.35)] ${origin.dark ? 'bg-navy' : 'bg-surface'}`}
+        style={{ top: cTop, left: cLeft, width: cW, height: cH, borderRadius: cR, opacity: cVis }}
+      />
+    )}
     <motion.div
       data-lenis-prevent
       className="fixed inset-0 z-[25] overflow-y-auto overscroll-contain bg-bg pb-[calc(72px+env(safe-area-inset-bottom))] shadow-[-10px_0_30px_rgb(0_0_0/0.18)]"
-      style={{ x: driving ? ownX : underX, clipPath: clip }}
+      style={{ x: driving ? ownX : underX, opacity: origin ? fade : 1 }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -281,7 +286,7 @@ function Layer({
       <InStackLayer.Provider value>
         <div className="mx-auto max-w-lg">{children}</div>
       </InStackLayer.Provider>
-      {origin && <motion.div aria-hidden className={`pointer-events-none fixed inset-0 ${origin.dark ? 'bg-navy' : 'bg-surface'}`} style={{ opacity: cover }} />}
     </motion.div>
+    </>
   );
 }
