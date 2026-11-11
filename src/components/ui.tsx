@@ -1,5 +1,6 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
 import { parseNum } from '../lib/format';
 import { appear, itemVariants, spring } from './motion';
@@ -201,7 +202,8 @@ export function Sheet({
       window.removeEventListener('keydown', onKey);
     };
   }, [open, onClose, lazy]);
-  return (
+  // Шторка рисуется прямо в <body>: внутри экрана-слоя она иначе оказалась бы под нижним меню.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -249,7 +251,8 @@ export function Sheet({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

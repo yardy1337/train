@@ -16,8 +16,31 @@ import { defaultsFor } from '../../data/exercises';
 
 const emptyExercise = (): ProgramExercise => ({ id: uid(), name: '', sets: 3, repsMin: 8, repsMax: 12, rest: 60 });
 
-export function ProgramEditor({ onBack }: { onBack: () => void }) {
-  const days = useProgram();
+/** Куда редактор сохраняет дни: основная программа (база) или своя программа (настройки). */
+export interface DayStore {
+  put: (day: ProgramDay) => Promise<unknown>;
+  remove: (dayId: string) => Promise<unknown>;
+}
+const mainStore: DayStore = { put: (d) => db.programDays.put(d), remove: (id) => db.programDays.delete(id) };
+
+export function ProgramEditor({
+  onBack,
+  days: customDays,
+  store = mainStore,
+  newDayId = uid,
+  extra,
+}: {
+  onBack: () => void;
+  /** Дни своей программы; без них — основная программа из базы. */
+  days?: ProgramDay[];
+  store?: DayStore;
+  newDayId?: () => string;
+  /** Дополнительный блок сверху (название и значок своей программы). */
+  extra?: React.ReactNode;
+}) {
+  const mainDays = useProgram();
+  const days = customDays ?? mainDays;
+  const isMain = !customDays;
   const [editing, setEditing] = useState<{ dayId: string; ex: ProgramExercise; isNew: boolean } | null>(null);
   const [swapping, setSwapping] = useState<{ day: ProgramDay; id: string; name: string } | null>(null);
   // После выбора из справочника поле «Название» перестаёт фильтровать список.
@@ -27,7 +50,7 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
     setEditing(v);
   };
 
-  const saveDay = (day: ProgramDay) => db.programDays.put(day);
+  const saveDay = (day: ProgramDay) => store.put(day);
 
   const move = (day: ProgramDay, idx: number, dir: -1 | 1) => {
     const list = [...day.exercises];
@@ -56,8 +79,8 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
 
   const addDay = () => {
     const letter = String.fromCharCode(65 + days.length);
-    db.programDays.put({
-      id: uid(),
+    store.put({
+      id: newDayId(),
       order: (days[days.length - 1]?.order ?? -1) + 1,
       name: `День ${letter}`,
       title: 'Новый день',
@@ -66,7 +89,7 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
   };
 
   const removeDay = (day: ProgramDay) => {
-    if (confirm(`Удалить «${day.name}» из программы?`)) db.programDays.delete(day.id);
+    if (confirm(`Удалить «${day.name}» из программы?`)) store.remove(day.id);
   };
 
   const reset = async () => {
@@ -84,6 +107,7 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
     <Screen kind="push">
       <PageHeader title="Редактор программы" left={<BackButton onClick={onBack} />} />
       <div className="space-y-3 px-4 pb-4">
+        {extra}
         {days.map((day) => (
           <Card key={day.id}>
             <div className="mb-3 grid grid-cols-[6rem_1fr_auto] gap-2">
@@ -141,9 +165,11 @@ export function ProgramEditor({ onBack }: { onBack: () => void }) {
           <Button className="flex-1" onClick={addDay}>
             <Plus size={16} strokeWidth={2.6} /> Добавить день
           </Button>
-          <Button variant="danger" onClick={reset}>
-            Сбросить
-          </Button>
+          {isMain && (
+            <Button variant="danger" onClick={reset}>
+              Сбросить
+            </Button>
+          )}
         </div>
       </div>
 

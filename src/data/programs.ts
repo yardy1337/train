@@ -17,6 +17,8 @@ export interface CatalogProgram {
   equipment: string;
   /** Дни программы. id дней должны быть уникальны в пределах каталога. */
   days: () => ProgramDay[];
+  /** Своя программа пользователя: значок и цвет выбраны им самим. */
+  custom?: { icon: string; color: string };
 }
 
 const HEAVY = 120; // тяжёлая база
@@ -216,11 +218,20 @@ export const DEFAULT_PROGRAM_ID = 'upper-lower';
 /** Ключ настройки с id выбранной программы. */
 export const ACTIVE_PROGRAM_KEY = 'activeProgram';
 
-export const findProgram = (id: string) => PROGRAMS.find((p) => p.id === id) ?? PROGRAMS[0];
+/** Свои программы пользователя (подставляются из базы при каждом показе каталога). */
+let custom: CatalogProgram[] = [];
+export function registerCustomPrograms(list: CatalogProgram[]) {
+  custom = list;
+}
+/** Каталог целиком: встроенные программы, затем свои. */
+export const allPrograms = () => [...PROGRAMS, ...custom];
+
+export const findProgram = (id: string) => allPrograms().find((p) => p.id === id) ?? PROGRAMS[0];
 
 const templateCache = new Map<string, ProgramDay[]>();
-/** Дни программы из каталога (кэшируются — шаблоны не меняются). */
+/** Дни программы из каталога (кэшируются — шаблоны не меняются; свои — всегда свежие). */
 export function templateDays(p: CatalogProgram): ProgramDay[] {
+  if (p.custom) return p.days();
   let d = templateCache.get(p.id);
   if (!d) {
     d = p.days();
@@ -231,5 +242,5 @@ export function templateDays(p: CatalogProgram): ProgramDay[] {
 
 /** Программа, к которой относится день (по id дня — они уникальны в каталоге). */
 export function programOfDay(dayId: string): CatalogProgram | undefined {
-  return PROGRAMS.find((p) => templateDays(p).some((d) => d.id === dayId));
+  return allPrograms().find((p) => templateDays(p).some((d) => d.id === dayId));
 }

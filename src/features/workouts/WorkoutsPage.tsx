@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { StackView, rectOf, type Rect, type StackLayer } from '../../components/StackView';
 import { AnimatePresence, motion } from 'motion/react';
-import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Settings, SlidersHorizontal, Target } from 'lucide-react';
+import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Plus, Settings, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
 import { setSetting, useSetting } from '../../db/settings';
 import { Button, Card, IconButton, PageHeader, BackButton } from '../../components/ui';
 import { Item, Screen } from '../../components/motion';
-import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, PROGRAMS, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
+import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, allPrograms, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
+import { createCustomProgram, customDayStore, deleteCustomProgram, newDay, patchCustomProgram, useCustomPrograms } from '../../data/customPrograms';
+import { CustomProgramSheet } from './CustomProgramSheet';
 import { scrollToTop } from '../../lib/smoothScroll';
 import { useBackEntry } from '../../lib/backNav';
 import { createWorkout, formatTarget, nextDayId } from '../../lib/workout';
@@ -31,7 +33,7 @@ function greeting() {
 
 const PINNED_KEY = 'pinnedProgram';
 
-type View = { name: 'home' } | { name: 'program'; id: string; origin?: Rect } | { name: 'editor' } | { name: 'history' };
+type View = { name: 'home' } | { name: 'program'; id: string; origin?: Rect } | { name: 'editor'; id: string } | { name: 'history' };
 
 
 export function WorkoutsPage() {
@@ -40,17 +42,21 @@ export function WorkoutsPage() {
   const history = useHistory();
   const active = useActiveWorkout();
   const activeProgramId = useSetting<string>(ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID);
+  // Свои программы пользователя — регистрируются в каталоге до любых поисков по нему.
+  const customs = useCustomPrograms();
+  const [creating, setCreating] = useState(false);
+  const [renaming, setRenaming] = useState<string | null>(null);
 
   // Свайп / системный «назад»: из редактора — на страницу программы, с остальных экранов — на главный.
   useBackEntry(view.name !== 'home', () => setView({ name: 'home' }));
-  useBackEntry(view.name === 'editor', () => setView({ name: 'program', id: activeProgramId }));
+  useBackEntry(view.name === 'editor', () => view.name === 'editor' && setView({ name: 'program', id: view.id }));
 
   const start = async (day: ProgramDay) => {
     await db.workouts.add(createWorkout(day, history));
   };
 
   // Редактируемая программа (с вашими правками) хранится в базе, остальные — шаблоны каталога.
-  const daysOf = (p: CatalogProgram) => (p.id === activeProgramId ? days : templateDays(p));
+  const daysOf = (p: CatalogProgram) => (p.id === activeProgramId && !p.custom ? days : templateDays(p));
   // «Моя программа» — та, по которой была последняя тренировка.
   const lastDayId = history[0]?.dayId;
   const lastUsedId =
@@ -58,14 +64,14 @@ export function WorkoutsPage() {
   // Закреплённая программа всегда сверху; иначе — та, по которой была последняя тренировка.
   // По умолчанию закреплена «Верх / Низ»; если пользователь открепит — сохранится null.
   const pinnedRaw = useSetting<string | null>(PINNED_KEY, DEFAULT_PROGRAM_ID);
-  const pinnedId = pinnedRaw && PROGRAMS.some((p) => p.id === pinnedRaw) ? pinnedRaw : null;
+  const pinnedId = pinnedRaw && allPrograms().some((p) => p.id === pinnedRaw) ? pinnedRaw : null;
   const currentId = pinnedId ?? lastUsedId;
   const togglePin = (id: string) => setSetting(PINNED_KEY, pinnedId === id ? null : id);
 
   // Стек экранов как на iPhone: главный внизу, программа / редактор / история — слоями поверх.
   const layers: StackLayer[] = [];
   if (view.name === 'program' || view.name === 'editor') {
-    const pid = view.name === 'program' ? view.id : activeProgramId;
+    const pid = view.id;
     const program = findProgram(pid);
     layers.push({
       key: `program-${pid}`,
@@ -76,18 +82,38 @@ export function WorkoutsPage() {
           isCurrent={pid === currentId}
           pinned={pid === pinnedId}
           onTogglePin={() => togglePin(pid)}
-          canEdit={pid === activeProgramId}
+          canEdit={pid === activeProgramId || !!program.custom}
           days={daysOf(program)}
           history={history}
           onBack={() => setView({ name: 'home' })}
-          onEdit={() => setView({ name: 'editor' })}
+          onEdit={() => setView({ name: 'editor', id: pid })}
           onStart={start}
         />
       ),
     });
   }
-  if (view.name === 'editor')
-    layers.push({ key: 'editor', node: <ProgramEditor onBack={() => setView({ name: 'program', id: activeProgramId })} /> });
+  if (view.name === 'editor') {
+    const c = customs.find((x) => x.id === view.id);
+    const back = () => setView({ name: 'program', id: view.id });
+    layers.push({
+      key: 'editor',
+      node: c ? (
+        <ProgramEditor
+          onBack={back}
+          days={c.days}
+          store={customDayStore(c.id)}
+          newDayId={() => newDay(c.id, 0).id}
+          extra={
+            <Button className="w-full" onClick={() => setRenaming(c.id)}>
+              Название, значок, удалить
+            </Button>
+          }
+        />
+      ) : (
+        <ProgramEditor onBack={back} />
+      ),
+    });
+  }
   if (view.name === 'history') layers.push({ key: 'history', node: <WorkoutHistory onBack={() => setView({ name: 'home' })} /> });
 
   return (
@@ -108,6 +134,7 @@ export function WorkoutsPage() {
                   activeProgramId={currentId}
                   pinnedId={pinnedId}
                   onOpen={(id, origin) => setView({ name: 'program', id, origin })}
+                  onCreate={() => setCreating(true)}
                   onHistory={() => setView({ name: 'history' })}
                   onStart={start}
                 />
@@ -116,6 +143,31 @@ export function WorkoutsPage() {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      <CustomProgramSheet
+        open={creating}
+        onClose={() => setCreating(false)}
+        onSave={async (f) => {
+          const id = await createCustomProgram(f);
+          setCreating(false);
+          setView({ name: 'editor', id });
+        }}
+      />
+      <CustomProgramSheet
+        open={!!renaming}
+        initial={customs.find((c) => c.id === renaming)}
+        onClose={() => setRenaming(null)}
+        onSave={async (f) => {
+          if (renaming) await patchCustomProgram(renaming, { name: f.name, icon: f.icon, color: f.color });
+          setRenaming(null);
+        }}
+        onDelete={async () => {
+          const c = customs.find((x) => x.id === renaming);
+          if (!c || !confirm(`Удалить программу «${c.name}»? История тренировок сохранится.`)) return;
+          setRenaming(null);
+          setView({ name: 'home' });
+          await deleteCustomProgram(c.id);
+        }}
+      />
     </motion.div>
   );
 }
@@ -130,6 +182,7 @@ function CatalogHome({
   onOpen,
   onHistory,
   onStart,
+  onCreate,
 }: {
   days: ProgramDay[];
   history: Workout[];
@@ -138,6 +191,7 @@ function CatalogHome({
   onOpen: (id: string, origin?: Rect) => void;
   onHistory: () => void;
   onStart: (d: ProgramDay) => void;
+  onCreate: () => void;
 }) {
   const [settings, setSettings] = useState(false);
   const mine = findProgram(activeProgramId);
@@ -199,10 +253,10 @@ function CatalogHome({
 
         <Item index={2} className="flex items-baseline justify-between pt-3">
           <div className="eyebrow">Каталог программ</div>
-          <div className="text-xs font-bold text-fg/35">{PROGRAMS.length}</div>
+          <div className="text-xs font-bold text-fg/35">{allPrograms().length}</div>
         </Item>
 
-        {[...PROGRAMS].sort((a, b) => Number(b.id === pinnedId) - Number(a.id === pinnedId)).map((p, i) => {
+        {allPrograms().sort((a, b) => Number(b.id === pinnedId) - Number(a.id === pinnedId)).map((p, i) => {
           const { Icon, color } = lookOf(p.id);
           return (
           <Card key={p.id} index={i + 3} className="relative overflow-hidden p-0">
@@ -245,8 +299,13 @@ function CatalogHome({
           );
         })}
 
-        <Item index={PROGRAMS.length + 3}>
-          <p className="px-2 pt-2 text-center text-xs font-medium text-fg/35">Скоро здесь появятся новые программы</p>
+        <Item index={allPrograms().length + 3}>
+          <button
+            onClick={onCreate}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-fg/15 px-4 py-4 text-sm font-extrabold text-fg/60 transition-colors active:bg-fg/[.04]"
+          >
+            <Plus size={18} strokeWidth={2.6} /> Создать свою программу
+          </button>
         </Item>
       </div>
       <SettingsSheet open={settings} onClose={() => setSettings(false)} />

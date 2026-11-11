@@ -1,4 +1,5 @@
-import { BicepsFlexed, Calendar, Dumbbell, PersonStanding } from 'lucide-react';
+import { BicepsFlexed, Calendar, Dumbbell, Flame, Heart, Mountain, PersonStanding, Target, Zap } from 'lucide-react';
+import { allPrograms } from './programs';
 import type { ComponentType } from 'react';
 
 type IconProps = { size?: number; strokeWidth?: number; className?: string };
@@ -40,4 +41,22 @@ const LOOKS: Record<string, ProgramLook> = {
   'football-gym': { Icon: SoccerBall, color: '#1f9a55' },
 };
 
-export const lookOf = (id: string): ProgramLook => LOOKS[id] ?? { Icon: Dumbbell, color: '#3461d1' };
+/** Значки и цвета на выбор для своей программы. */
+export const CUSTOM_ICONS: Record<string, ComponentType<IconProps>> = {
+  dumbbell: Dumbbell,
+  biceps: BicepsFlexed,
+  person: PersonStanding,
+  flame: Flame,
+  zap: Zap,
+  heart: Heart,
+  target: Target,
+  mountain: Mountain,
+  ball: SoccerBall,
+};
+export const CUSTOM_COLORS = ['#3461d1', '#0f8a8c', '#7650d0', '#d0543c', '#1f9a55', '#c9a227', '#d23f7a', '#4b5563'];
+
+export function lookOf(id: string): ProgramLook {
+  const c = allPrograms().find((p) => p.id === id)?.custom;
+  if (c) return { Icon: CUSTOM_ICONS[c.icon] ?? Dumbbell, color: c.color };
+  return LOOKS[id] ?? { Icon: Dumbbell, color: '#3461d1' };
+}

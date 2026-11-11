@@ -207,6 +207,8 @@ function Layer({
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (!isTop || e.touches.length !== 1 || !follow.current) return;
+    // Касания в шторке (она рисуется в <body>, но события идут через React-дерево) — не свайп.
+    if ((e.target as Element | null)?.closest?.('[role="dialog"]')) return;
     const t = e.touches[0];
     if (t.clientX > EDGE) return;
     start.current = { x: t.clientX, y: t.clientY, t: performance.now(), decided: false, active: false };
