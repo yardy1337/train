@@ -101,9 +101,15 @@ export function StackView({ base, layers, onSwipeBack }: { base: ReactNode; laye
     if (layers.length < prevLen) setExiting(true);
   }
 
+  // Пока верхний экран полностью открыт, нижний прячем: Safari иначе может нарисовать его
+  // закреплённую шапку поверх открытого экрана. При свайпе/уходе он снова виден.
+  const baseVis = useTransform(topX, (v) => (v < 0.5 ? 'hidden' : 'visible'));
+
   return (
     <>
-      <motion.div style={{ x: underX }}>{base}</motion.div>
+      <motion.div className="relative isolate z-0" style={{ x: underX, visibility: baseVis }}>
+        {base}
+      </motion.div>
       <motion.div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-[24] bg-black"
@@ -154,12 +160,21 @@ function Layer({
   const p = useMotionValue(origin ? 0 : 1); // 0 — размером с плитку, 1 — весь экран
   // Растёт отдельная пустая карточка (без clip-path: Safari с ним оставляет «залипшие» куски экрана),
   // а сам экран проявляется поверх неё в конце.
-  const o = origin ?? { top: 0, left: 0, width: 0, height: 0 };
-  const cTop = useTransform(p, (v) => o.top * (1 - v));
-  const cLeft = useTransform(p, (v) => o.left * (1 - v));
-  const cW = useTransform(p, (v) => o.width + (window.innerWidth - o.width) * v);
-  const cH = useTransform(p, (v) => o.height + (window.innerHeight - o.height) * v);
-  const cR = useTransform(p, (v) => EXPAND_RADIUS * (1 - Math.min(1, v)));
+  // Карточка во весь экран, сжатая transform'ом до размеров плитки (только transform — плавно на iPhone).
+  const o = origin ?? { top: 0, left: 0, width: 1, height: 1 };
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const sx = useTransform(p, (v) => (o.width + (W - o.width) * v) / W);
+  const sy = useTransform(p, (v) => (o.height + (H - o.height) * v) / H);
+  const tx = useTransform(p, (v) => o.left * (1 - v));
+  const ty = useTransform(p, (v) => o.top * (1 - v));
+  // Скругление компенсируем на масштаб, чтобы углы оставались круглыми.
+  const cR = useTransform(p, (v) => {
+    const r = EXPAND_RADIUS * (1 - Math.min(1, v));
+    const kx = (o.width + (W - o.width) * v) / W;
+    const ky = (o.height + (H - o.height) * v) / H;
+    return `${r / kx}px / ${r / ky}px`;
+  });
   const cVis = useTransform(p, (v) => (v >= 0.995 ? 0 : 1));
   const fade = useTransform(p, [0.5, 0.95], [0, 1]);
 
@@ -175,7 +190,8 @@ function Layer({
 
   // Появление: справа налево (или раскрытие из плитки).
   useEffect(() => {
-    const c = animate(x, 0, { duration: origin ? 0.5 : 0.42, ease: IOS_EASE });
+    // При раскрытии x идёт той же пружиной, что и карточка: экран под ним прячется, когда всё раскрылось.
+    const c = origin ? animate(x, 0, { type: 'spring', stiffness: 260, damping: 30 }) : animate(x, 0, { duration: 0.42, ease: IOS_EASE });
     const e = origin
       ? animate(p, 1, {
           type: 'spring',
@@ -270,8 +286,8 @@ function Layer({
     {origin && (
       <motion.div
         aria-hidden
-        className={`pointer-events-none fixed z-[25] shadow-[0_20px_50px_-12px_rgb(0_0_0/0.35)] ${origin.dark ? 'bg-navy' : 'bg-surface'}`}
-        style={{ top: cTop, left: cLeft, width: cW, height: cH, borderRadius: cR, opacity: cVis }}
+        className={`pointer-events-none fixed left-0 top-0 z-[25] origin-top-left will-change-transform ${origin.dark ? 'bg-navy' : 'bg-surface'}`}
+        style={{ width: W, height: H, x: tx, y: ty, scaleX: sx, scaleY: sy, borderRadius: cR, opacity: cVis }}
       />
     )}
     <motion.div
