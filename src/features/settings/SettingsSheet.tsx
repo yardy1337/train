@@ -2,19 +2,19 @@ import { Dumbbell, Palette, TrendingUp, UtensilsCrossed, type LucideIcon } from 
 import { FEATURES, setFeature, useFeature, type FeatureId } from '../../lib/features';
 import { Sheet } from '../../components/ui';
 
-const GROUPS: { name: string; Icon: LucideIcon; always?: string[] }[] = [
+const GROUPS: { name: string; Icon: LucideIcon }[] = [
   { name: 'Оформление', Icon: Palette },
-  { name: 'Тренировки', Icon: Dumbbell, always: ['Таймер отдыха', 'Личные рекорды', 'Серия недель'] },
-  { name: 'Питание', Icon: UtensilsCrossed, always: ['Расчёт нормы калорий'] },
+  { name: 'Тренировки', Icon: Dumbbell },
+  { name: 'Питание', Icon: UtensilsCrossed },
   { name: 'Прогресс', Icon: TrendingUp },
 ];
 
-/** Настройки по разделам: переключатели функций «по желанию» и то, что работает всегда. */
+/** Настройки по разделам: переключатели функций «по желанию». */
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Sheet open={open} onClose={onClose} title="Настройки">
       <div className="space-y-5">
-        {GROUPS.map(({ name, Icon, always }) => (
+        {GROUPS.map(({ name, Icon }) => (
           <section key={name} className="space-y-2">
             <div className="flex items-center gap-1.5">
               <Icon size={14} strokeWidth={2.6} className="text-gold" />
@@ -25,9 +25,6 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
                 <FeatureRow key={f.id} id={f.id} title={f.title} hint={f.hint} first={i === 0} />
               ))}
             </div>
-            {always && (
-              <p className="px-1 text-xs font-medium text-fg/45">Всегда включено: {always.join(', ').toLowerCase().replace(/^./, (c) => c.toUpperCase())}</p>
-            )}
           </section>
         ))}
       </div>
