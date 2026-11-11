@@ -18,6 +18,7 @@ import { ActiveWorkout } from './ActiveWorkout';
 import { ProgramEditor } from './ProgramEditor';
 import { WorkoutHistory } from './WorkoutHistory';
 import { WeekStrip } from './WeekStrip';
+import { lookOf } from '../../data/programLook';
 import { SettingsSheet } from '../settings/SettingsSheet';
 
 /** «Доброе утро · понедельник, 10 ноября» */
@@ -201,11 +202,18 @@ function CatalogHome({
           <div className="text-xs font-bold text-fg/35">{PROGRAMS.length}</div>
         </Item>
 
-        {[...PROGRAMS].sort((a, b) => Number(b.id === pinnedId) - Number(a.id === pinnedId)).map((p, i) => (
-          <Card key={p.id} index={i + 3} className="p-0">
-            <button className="flex w-full items-center gap-3 p-4 text-left active:bg-fg/[.02]" onClick={(e) => onOpen(p.id, rectOf(e.currentTarget))}>
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent">
-                <Dumbbell size={22} strokeWidth={2.2} />
+        {[...PROGRAMS].sort((a, b) => Number(b.id === pinnedId) - Number(a.id === pinnedId)).map((p, i) => {
+          const { Icon, color } = lookOf(p.id);
+          return (
+          <Card key={p.id} index={i + 3} className="relative overflow-hidden p-0">
+            <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: color }} />
+            <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full opacity-[.07]" style={{ background: color }} />
+            <button className="relative flex w-full items-center gap-3 p-4 pl-5 text-left active:bg-fg/[.02]" onClick={(e) => onOpen(p.id, rectOf(e.currentTarget))}>
+              <span
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl"
+                style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
+              >
+                <Icon size={22} strokeWidth={2.3} />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -234,7 +242,8 @@ function CatalogHome({
               <ChevronRight size={20} className="shrink-0 text-fg/25" />
             </button>
           </Card>
-        ))}
+          );
+        })}
 
         <Item index={PROGRAMS.length + 3}>
           <p className="px-2 pt-2 text-center text-xs font-medium text-fg/35">Скоро здесь появятся новые программы</p>
@@ -304,7 +313,21 @@ function ProgramPage({
         }
       />
       <div className="space-y-3 px-4 pb-6">
-        <Card index={0} className="space-y-3">
+        <Card index={0} className="relative space-y-3 overflow-hidden">
+          {(() => {
+            const { Icon, color } = lookOf(program.id);
+            return (
+              <>
+                <span aria-hidden className="absolute inset-x-0 top-0 h-1.5" style={{ background: color }} />
+                <span
+                  className="grid h-11 w-11 place-items-center rounded-2xl"
+                  style={{ background: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
+                >
+                  <Icon size={22} strokeWidth={2.3} />
+                </span>
+              </>
+            );
+          })()}
           <p className="text-sm font-medium leading-relaxed text-fg/70">{program.description}</p>
           <div className="grid grid-cols-3 gap-2">
             <Stat icon={<CalendarDays size={16} />} label="В неделю" value={`${program.daysPerWeek} ${pluralRu(program.daysPerWeek, 'день', 'дня', 'дней')}`} />
