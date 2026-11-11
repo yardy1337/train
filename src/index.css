@@ -105,3 +105,18 @@ html.scroll-locked body {
   content-visibility: auto;
   contain-intrinsic-size: auto 64px;
 }
+
+/* Огонёк серии: лёгкое мерцание, как у пламени. */
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.08, 0.95) rotate(-4deg); }
+  50% { transform: scale(0.96, 1.07) rotate(3deg); }
+  75% { transform: scale(1.05, 0.97) rotate(-2deg); }
+}
+.flame-live {
+  transform-origin: 50% 90%;
+  animation: flame-flicker 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flame-live { animation: none; }
+}

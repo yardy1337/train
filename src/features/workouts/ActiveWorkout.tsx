@@ -17,6 +17,7 @@ import { bestMap, formatBest, isRecord } from '../../lib/records';
 import { fmtKg, isBarbell, suggestWeight, warmupSets } from '../../lib/training';
 import { useFeature } from '../../lib/features';
 import { PlateSheet } from './PlateSheet';
+import { BounceTrophy, DrawCheck } from '../../components/LiveIcons';
 import { TechniqueSheet, hasTechnique } from './TechniqueSheet';
 
 export function ActiveWorkout({ initial, history }: { initial: Workout; history: Workout[] }) {
@@ -306,7 +307,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                       }`}
                     >
                       {isRecord(s, best.get(normName(ex.name))) ? (
-                        <Trophy size={16} strokeWidth={2.6} className="mx-auto text-gold" aria-label="Рекорд" />
+                        <BounceTrophy size={16} className="mx-auto text-gold" />
                       ) : (
                         <span className="text-center text-sm font-bold text-fg/40">{si + 1}</span>
                       )}
@@ -330,7 +331,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                           s.done ? 'bg-accent text-white shadow-lift' : 'border border-fg/10 bg-surface text-fg/30'
                         }`}
                       >
-                        <Check size={20} strokeWidth={3} />
+                        {s.done ? <DrawCheck size={20} strokeWidth={3} /> : <Check size={20} strokeWidth={3} />}
                       </button>
                     </div>
                   );
@@ -449,7 +450,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
             onClick={() => setToast(null)}
           >
             <div className="mx-auto mt-2 flex max-w-lg items-center gap-3 rounded-2xl bg-gold px-4 py-3 text-ink shadow-gold">
-              <Trophy size={22} strokeWidth={2.4} className="shrink-0" />
+              <BounceTrophy size={22} strokeWidth={2.4} repeat className="shrink-0" />
               <span className="text-sm font-extrabold">{toast}</span>
             </div>
           </motion.div>

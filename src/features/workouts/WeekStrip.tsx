@@ -1,4 +1,5 @@
-import { Check, Flame } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { LiveFlame } from '../../components/LiveIcons';
 import { Card } from '../../components/ui';
 import { addDays, parseISODate, todayISO } from '../../lib/date';
 import { pluralRu } from '../../lib/format';
@@ -56,7 +57,7 @@ export function WeekStrip({ history, plan, index }: { history: Workout[]; plan: 
         <div className="h-full rounded-full bg-gold transition-[width] duration-700" style={{ width: `${Math.min(100, (count / Math.max(1, plan)) * 100)}%` }} />
       </div>
       <div className="flex items-center gap-2.5 rounded-xl bg-gold-soft px-3 py-2">
-        <Flame size={20} strokeWidth={2.4} className={streak ? 'text-gold-strong' : 'text-fg/30'} />
+        <LiveFlame size={20} active={streak > 0} className={streak ? 'text-gold-strong' : 'text-fg/30'} />
         <div className="min-w-0 flex-1 text-xs font-bold leading-tight">
           {streak ? (
             <>
