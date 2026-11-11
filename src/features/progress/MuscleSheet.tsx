@@ -1,7 +1,7 @@
-import { CheckCircle2, Plus, Target, TrendingUp } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, Plus, Target, TrendingUp } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
-import { Button, Sheet } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { allExercises, defaultsFor, type CatalogExercise } from '../../data/exercises';
 import { db } from '../../db/db';
 import { formatShort, uid } from '../../lib/date';
@@ -11,16 +11,8 @@ import { findLastResult, nextDayId, normName } from '../../lib/workout';
 import type { Workout, WorkoutExercise } from '../../types';
 import { useHistory, useProgram } from '../workouts/hooks';
 
-/** Окно мышцы: сколько не хватает и как добрать, упражнения на неё, история по неделям. */
-export function MuscleSheet({ muscle, sets, parts, onClose }: { muscle: Muscle | null; sets: number; parts: string; onClose: () => void }) {
-  return (
-    <Sheet open={!!muscle} onClose={onClose} title={muscle ?? ''}>
-      {muscle && <Body muscle={muscle} sets={sets} parts={parts} />}
-    </Sheet>
-  );
-}
-
-function Body({ muscle, sets, parts }: { muscle: Muscle; sets: number; parts: string }) {
+/** Данные по мышце: упражнения, совет, история. */
+function useMuscle(muscle: Muscle, sets: number) {
   const history = useHistory();
   const days = useProgram();
   const active = useLiveQuery(async () => (await db.workouts.where('status').equals('active').first()) ?? null, []);
@@ -50,6 +42,79 @@ function Body({ muscle, sets, parts }: { muscle: Muscle; sets: number; parts: st
   const weeks = useMemo(() => weeklyHistory(history, muscle), [history, muscle]);
   const maxW = Math.max(TARGET.max, ...weeks.map((w) => w.sets));
 
+  return { history, active, added, setAdded, inProgram, exercises, need, dayForMuscle, best, weeks, maxW, sets };
+}
+
+/** Подсказки справа от человечка: подходы, как догнать, подходы по неделям. */
+export function MuscleTips({ muscle, sets, parts, onBack }: { muscle: Muscle; sets: number; parts: string; onBack: () => void }) {
+  const { need, dayForMuscle, best, weeks, maxW } = useMuscle(muscle, sets);
+  return (
+    <div className="min-w-0 space-y-2.5">
+      <button onClick={onBack} className="inline-flex items-center gap-1 text-xs font-bold text-fg/50 active:text-fg">
+        <ChevronLeft size={14} strokeWidth={2.6} /> Все мышцы
+      </button>
+      <div>
+        <div className="text-base font-extrabold leading-tight">{muscle}</div>
+        <div className="text-[11px] font-medium leading-tight text-fg/45">{parts}</div>
+      </div>
+      <div className={`rounded-xl p-2.5 ${need > 0 ? 'bg-gold-soft' : sets > TARGET.max ? 'bg-amber-500/10' : 'bg-accent-soft'}`}>
+        <div className="flex items-center gap-1.5 text-sm font-extrabold">
+          {need > 0 ? <Target size={15} className="shrink-0 text-gold-strong" /> : <CheckCircle2 size={15} className="shrink-0 text-green-600" />}
+          {sets} {pluralRu(sets, 'подход', 'подхода', 'подходов')} за 7 дней
+        </div>
+        <p className="mt-1 text-xs font-medium leading-snug text-fg/80">
+          {need > 0 ? (
+            <>
+              Не хватает <b>{need}</b> до нормы.{' '}
+              {best && (
+                <>
+                  Добавь {Math.min(need, 4)} {pluralRu(Math.min(need, 4), 'подход', 'подхода', 'подходов')} «{best.name}»
+                  {dayForMuscle ? (
+                    <>
+                      {' '}
+                      в <b>{dayForMuscle.name}</b> ({dayForMuscle.title})
+                    </>
+                  ) : (
+                    ' в ближайшую тренировку'
+                  )}
+                  .
+                </>
+              )}
+            </>
+          ) : sets > TARGET.max ? (
+            'Больше 20 подходов в неделю — можно немного снизить для восстановления.'
+          ) : (
+            'В норме (10–20 подходов). Так держать!'
+          )}
+        </p>
+      </div>
+      <div>
+        <div className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-fg/45">
+          <TrendingUp size={11} /> По неделям
+        </div>
+        <div className="relative flex h-16 items-end gap-1">
+          <div className="pointer-events-none absolute inset-x-0 border-t border-dashed border-gold/60" style={{ bottom: `${(TARGET.min / maxW) * 100}%` }} />
+          {weeks.map((w, i) => (
+            <div
+              key={w.start}
+              title={`${formatShort(w.start)}: ${w.sets}`}
+              className={`flex-1 rounded-t ${i === weeks.length - 1 ? 'bg-gold' : w.sets >= TARGET.min ? 'bg-accent' : 'bg-fg/15'}`}
+              style={{ height: `${Math.max(4, (w.sets / maxW) * 100)}%` }}
+            />
+          ))}
+        </div>
+        <div className="mt-0.5 flex justify-between text-[9px] font-semibold text-fg/40">
+          <span>8 нед. назад</span>
+          <span>эта</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Упражнения на мышцу (под картой), с добавлением в текущую тренировку. */
+export function MuscleExercises({ muscle, sets }: { muscle: Muscle; sets: number }) {
+  const { history, active, added, setAdded, inProgram, exercises } = useMuscle(muscle, sets);
   const addToWorkout = async (c: CatalogExercise) => {
     const w = await db.workouts.where('status').equals('active').first();
     if (!w) return;
@@ -71,74 +136,10 @@ function Body({ muscle, sets, parts }: { muscle: Muscle; sets: number; parts: st
   };
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs font-semibold text-fg/50">{parts}</p>
-
-      {/* 2. Как догнать */}
-      <section
-        className={`rounded-2xl p-3 ${need > 0 ? 'bg-gold-soft' : sets > TARGET.max ? 'bg-amber-500/10' : 'bg-accent-soft'}`}
-      >
-        <div className="flex items-center gap-2 font-extrabold">
-          {need > 0 ? <Target size={18} className="text-gold-strong" /> : <CheckCircle2 size={18} className="text-green-600" />}
-          {sets} {pluralRu(sets, 'подход', 'подхода', 'подходов')} за 7 дней
-        </div>
-        <p className="mt-1 text-sm font-medium leading-snug text-fg/80">
-          {need > 0 ? (
-            <>
-              До нормы не хватает <b>{need}</b> {pluralRu(need, 'подхода', 'подходов', 'подходов')}.{' '}
-              {best && (
-                <>
-                  Добавь {Math.min(need, 4)} {pluralRu(Math.min(need, 4), 'подход', 'подхода', 'подходов')} «{best.name}»
-                  {dayForMuscle ? (
-                    <>
-                      {' '}
-                      в ближайшую тренировку — <b>{dayForMuscle.name}</b> ({dayForMuscle.title})
-                    </>
-                  ) : (
-                    ' в одну из ближайших тренировок'
-                  )}
-                  {need > 4 ? ', а остальное — в следующую.' : '.'}
-                </>
-              )}
-            </>
-          ) : sets > TARGET.max ? (
-            'Нагрузки больше 20 подходов в неделю — для восстановления можно немного снизить.'
-          ) : (
-            'В норме (10–20 подходов в неделю). Так держать!'
-          )}
-        </p>
-      </section>
-
-      {/* 3. История */}
-      <section>
-        <div className="eyebrow mb-2 flex items-center gap-1.5">
-          <TrendingUp size={13} /> Подходы по неделям
-        </div>
-        <div className="relative flex h-28 items-end gap-1.5">
-          <div className="pointer-events-none absolute inset-x-0 border-t border-dashed border-gold/60" style={{ bottom: `${(TARGET.min / maxW) * 100}%` }} />
-          {weeks.map((w, i) => (
-            <div key={w.start} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-              <span className="text-[10px] font-bold tabular-nums text-fg/50">{w.sets || ''}</span>
-              <div
-                className={`w-full rounded-t-md ${i === weeks.length - 1 ? 'bg-gold' : w.sets >= TARGET.min ? 'bg-accent' : 'bg-fg/15'}`}
-                style={{ height: `${Math.max(3, (w.sets / maxW) * 100)}%` }}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mt-1 flex gap-1.5">
-          {weeks.map((w, i) => (
-            <span key={w.start} className="flex-1 text-center text-[9px] font-semibold text-fg/40">
-              {i === weeks.length - 1 ? 'эта' : formatShort(w.start).replace('.', '')}
-            </span>
-          ))}
-        </div>
-        <p className="mt-1 text-[11px] font-medium text-fg/45">Пунктир — норма 10 подходов. Золотой столбик — текущая неделя.</p>
-      </section>
-
+    <div>
       {/* 1. Упражнения */}
       <section>
-        <div className="eyebrow mb-2">Упражнения на эту мышцу</div>
+        <div className="eyebrow mb-2">Упражнения: {muscle.toLowerCase()}</div>
         {!active && <p className="mb-2 text-xs font-medium text-fg/45">Начните тренировку — и сможете добавить упражнение в неё отсюда.</p>}
         <ul className="divide-y divide-fg/[.06] rounded-2xl bg-fg/[.04] px-3">
           {exercises.slice(0, 12).map((e) => {

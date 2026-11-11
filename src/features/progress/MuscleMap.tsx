@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import { Card, Segmented } from '../../components/ui';
 import { MuscleMap as BodyMap, type Highlight, type MuscleGroup } from 'js-rich-body-highlighter/react';
 import { useFeature } from '../../lib/features';
-import { MuscleSheet } from './MuscleSheet';
+import { MuscleExercises, MuscleTips } from './MuscleSheet';
+import { AnimatePresence, motion } from 'motion/react';
 import { pluralRu } from '../../lib/format';
 import { MUSCLES, TARGET, weeklySets, type Muscle } from '../../lib/muscles';
 import { useHistory } from '../workouts/hooks';
@@ -22,6 +23,9 @@ const GROUPS: Record<Muscle, MuscleGroup[]> = {
   Икры: ['calves'],
 };
 const muscleOfGroup = (g: string) => (Object.keys(GROUPS) as Muscle[]).find((m) => GROUPS[m].includes(g as MuscleGroup)) ?? null;
+
+const BACK_ONLY: Muscle[] = ['Спина', 'Ягодицы и бицепс бедра', 'Трицепс'];
+const FRONT_ONLY: Muscle[] = ['Грудь', 'Пресс и кор', 'Квадрицепс', 'Бицепс'];
 
 /** Из чего состоит группа — подпись в списке. */
 const PARTS: Record<Muscle, string> = {
@@ -71,14 +75,21 @@ export function MuscleMap({ index }: { index: number }) {
   const total = MUSCLES.reduce((t, m) => t + sets[m], 0);
   const lagging = MUSCLES.filter((m) => sets[m] < TARGET.min);
   const dark = useFeature('dark');
+  // Выбрали мышцу из списка — повернуть человека той стороной, где её видно.
+  const pick = (m: Muscle) => {
+    setSelected(m);
+    if (BACK_ONLY.includes(m)) setSide('back');
+    else if (FRONT_ONLY.includes(m)) setSide('front');
+  };
   const highlights = useMemo<Highlight[]>(
     () =>
       MUSCLES.flatMap((m) => {
         const n = sets[m];
-        const on = n > 0 || m === selected;
-        if (!on) return [];
-        const intensity = m === selected ? 100 : Math.min(100, 60 + Math.round((n / TARGET.max) * 40));
-        return GROUPS[m].map((group) => ({ group, intensity, color: n ? tint(n) : '#8fa8e8' }));
+        const isSel = m === selected;
+        if (!n && !isSel) return [];
+        // Выбранная мышца «загорается», остальные приглушаются.
+        const intensity = isSel ? 100 : selected ? 18 : Math.min(100, 60 + Math.round((n / TARGET.max) * 40));
+        return GROUPS[m].map((group) => ({ group, intensity, color: isSel ? (n ? '#ff3b1f' : '#3f7fd6') : n ? tint(n) : '#8fa8e8' }));
       }),
     [sets, selected],
   );
@@ -117,13 +128,20 @@ export function MuscleMap({ index }: { index: number }) {
           />
         </div>
 
+        <AnimatePresence mode="wait" initial={false}>
+          {selected ? (
+            <motion.div className="min-w-0" key={selected} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }}>
+              <MuscleTips muscle={selected} sets={sets[selected]} parts={PARTS[selected]} onBack={() => setSelected(null)} />
+            </motion.div>
+          ) : (
+            <motion.div className="min-w-0" key="list" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.2 }}>
         <div className="min-w-0 space-y-1.5">
           <div className="eyebrow">Задействованы</div>
           {!worked.length && <p className="text-xs font-semibold text-fg/45">Пока ничего — заверши тренировку, и мышцы загорятся</p>}
           {worked.map((m) => (
             <button
               key={m}
-              onClick={() => setSelected(m)}
+              onClick={() => pick(m)}
               className={`flex w-full items-start gap-2 rounded-xl px-2 py-1.5 text-left transition-colors ${selected === m ? 'bg-accent-soft' : 'active:bg-fg/[.04]'}`}
             >
               <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: sets[m] ? tint(sets[m]) : color(0) }} />
@@ -143,7 +161,7 @@ export function MuscleMap({ index }: { index: number }) {
               Не было:{' '}
               {idle.map((m, i) => (
                 <span key={m}>
-                  <button onClick={() => setSelected(m)} className="underline decoration-dotted underline-offset-2">
+                  <button onClick={() => pick(m)} className="underline decoration-dotted underline-offset-2">
                     {m.toLowerCase()}
                   </button>
                   {i < idle.length - 1 ? ', ' : ''}
@@ -152,9 +170,13 @@ export function MuscleMap({ index }: { index: number }) {
             </div>
           )}
         </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <MuscleSheet muscle={selected} sets={selected ? sets[selected] : 0} parts={selected ? PARTS[selected] : ''} onClose={() => setSelected(null)} />
+      {selected && <MuscleExercises muscle={selected} sets={sets[selected]} />}
+
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-fg/50">
         {[
