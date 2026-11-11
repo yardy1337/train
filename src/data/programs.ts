@@ -54,6 +54,27 @@ export const PROGRAMS: CatalogProgram[] = [
     days: createDefaultProgram,
   },
   {
+    id: 'upper-lower-3',
+    name: 'Верх / Низ (Вася)',
+    tagline: 'Гантели · набор массы · 3 тренировки в неделю',
+    description:
+      'Те же упражнения, что в «Верх / Низ», но на три дня: верх (сила), низ с прессом, верх (объём).',
+    level: 'Средний',
+    daysPerWeek: 3,
+    goal: 'Масса',
+    equipment: 'Гантели, турник, блок',
+    // Дни A, B, C обычной «Верх / Низ» со своими id (по id дня тренировка относится к программе).
+    days: () =>
+      createDefaultProgram()
+        .slice(0, 3)
+        .map((d, i) => ({
+          ...d,
+          id: `ul3-${d.id}`,
+          order: i,
+          exercises: d.exercises.map((e) => ({ ...e, id: `ul3-${e.id}` })),
+        })),
+  },
+  {
     id: 'full-body',
     name: 'Full Body (зал)',
     tagline: 'Тренажёрный зал · всё тело · 3 раза в неделю',
