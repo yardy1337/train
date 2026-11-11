@@ -39,6 +39,7 @@ const LOOKS: Record<string, ProgramLook> = {
   'full-body': { Icon: PersonStanding, color: '#7650d0' },
   'split-isma': { Icon: BicepsFlexed, color: '#d0543c' },
   'football-gym': { Icon: SoccerBall, color: '#1f9a55' },
+  'power': { Icon: Zap, color: '#b4232c' },
 };
 
 /** Значки и цвета на выбор для своей программы. */
