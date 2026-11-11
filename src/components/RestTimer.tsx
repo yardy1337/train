@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { showRestNotification, useRestSettings } from '../lib/restSettings';
 
 interface TimerState {
   endAt: number;
@@ -37,6 +38,9 @@ function beep() {
 }
 
 export function RestTimerProvider({ children }: { children: ReactNode }) {
+  const settings = useRestSettings();
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   const [state, setState] = useState<TimerState | null>(() => {
     try {
       const s = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as TimerState | null;
@@ -84,8 +88,10 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
     if (state && remaining === 0 && !fired.current) {
       fired.current = true;
       setFinished(true);
-      navigator.vibrate?.([300, 150, 300]);
-      beep();
+      const s = settingsRef.current;
+      if (s.vibrate) navigator.vibrate?.([300, 150, 300]);
+      if (s.sound) beep();
+      if (s.notify && document.visibilityState === 'hidden') void showRestNotification(state.label);
       const t = setTimeout(stop, 4000);
       return () => clearTimeout(t);
     }
@@ -93,7 +99,8 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
 
   const add = (sec: number) => {
     if (!state) return;
-    const s = { ...state, endAt: Math.max(Date.now(), state.endAt) + sec * 1000, total: state.total + sec };
+    const endAt = Math.max(Date.now() + 5000, Math.max(Date.now(), state.endAt) + sec * 1000);
+    const s = { ...state, endAt, total: Math.max(5, state.total + sec) };
     fired.current = false;
     setFinished(false);
     setState(s);
@@ -126,8 +133,11 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
             </div>
             {!finished && (
               <>
-                <button onClick={() => add(15)} className="relative rounded-xl bg-white/10 px-3 py-2 text-sm font-bold active:bg-white/20">
-                  +15с
+                <button onClick={() => add(-15)} aria-label="Минус 15 секунд" className="relative rounded-xl bg-white/10 px-2.5 py-2 text-sm font-bold active:bg-white/20">
+                  −15
+                </button>
+                <button onClick={() => add(15)} aria-label="Плюс 15 секунд" className="relative rounded-xl bg-white/10 px-2.5 py-2 text-sm font-bold active:bg-white/20">
+                  +15
                 </button>
                 <button onClick={stop} className="relative rounded-xl bg-white/10 px-3 py-2 text-sm font-bold active:bg-white/20">
                   Пропустить

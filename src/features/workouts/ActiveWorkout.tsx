@@ -17,12 +17,14 @@ import { bestMap, formatBest, isRecord } from '../../lib/records';
 import { fmtKg, isBarbell, suggestWeight, warmupSets } from '../../lib/training';
 import { useFeature } from '../../lib/features';
 import { PlateSheet } from './PlateSheet';
+import { restFor, useRestSettings } from '../../lib/restSettings';
 import { BounceTrophy, DrawCheck } from '../../components/LiveIcons';
 import { TechniqueSheet, useHasTechnique } from './TechniqueSheet';
 
 export function ActiveWorkout({ initial, history }: { initial: Workout; history: Workout[] }) {
   const [w, setW] = useState<Workout>(initial);
   const timer = useRestTimer();
+  const restSettings = useRestSettings();
   const [, tick] = useState(0);
   const first = useRef(true);
 
@@ -101,7 +103,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
       setToast(`Новый рекорд: ${ex.name} — ${weight ? `${fmtKg(weight)} кг × ${reps}` : `${reps} повт.`}`);
     }
     const isLastSetOfLastEx = i === w.exercises.length - 1 && si === ex.sets.length - 1;
-    if (!isLastSetOfLastEx) timer.start(ex.rest, `Отдых · ${ex.name}`);
+    if (!isLastSetOfLastEx) timer.start(restFor(restSettings, ex.rest), `Отдых · ${ex.name}`);
   };
 
   const finish = async () => {
@@ -241,7 +243,7 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                   )}
                   <div className="mt-0.5 text-xs text-fg/55">
                     {ex.plannedSets}×{formatReps(ex.repsMin, ex.repsMax, ex.note)}
-                    {ex.note && (ex.repsMin || ex.repsMax) ? ` · ${ex.note}` : ''} · отдых {ex.rest} с
+                    {ex.note && (ex.repsMin || ex.repsMax) ? ` · ${ex.note}` : ''} · отдых {restFor(restSettings, ex.rest)} с
                   </div>
                 </div>
                 {increaseNow && !featSuggest && (
