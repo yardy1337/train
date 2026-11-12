@@ -15,7 +15,8 @@ import { calcPace, exerciseNames, exerciseSeries } from '../../lib/progress';
 import { downloadBackup, importData } from '../../lib/backup';
 import type { WeightEntry } from '../../types';
 import { useHistory } from '../workouts/hooks';
-import { useFeature } from '../../lib/features';
+import { useAllowed, useFeature } from '../../lib/features';
+import { HormoneCard } from './HormoneAdvisor';
 
 const EMPTY: WeightEntry[] = [];
 
@@ -38,6 +39,7 @@ function useChart() {
 export function ProgressPage() {
   const [settings, setSettings] = useState(false);
   const measurements = useFeature('measurements');
+  const hormones = useAllowed('hormones');
   return (
     <Screen>
       <PageHeader
@@ -50,6 +52,7 @@ export function ProgressPage() {
       />
       <div className="space-y-3 px-4 pb-4">
         <MuscleMap index={1} />
+        {hormones && <HormoneCard index={2} />}
         <BodyWeight />
         {measurements && <Measurements index={2} />}
         <Records index={2} />

@@ -22,6 +22,7 @@ export const GLOBAL_FEATURES = [
   { id: 'photo', title: 'Еда по фото', hint: 'Распознавание блюд нейросетью' },
   { id: 'customPrograms', title: 'Свои программы', hint: 'Кнопка «Создать свою программу» в каталоге' },
   { id: 'share', title: 'Поделиться итогом', hint: 'Картинка тренировки для сторис' },
+  { id: 'hormones', title: 'Советчик по гормонам', hint: 'Бот: симптомы → возможная причина и что делать' },
 ] as const;
 export type GlobalFeatureId = (typeof GLOBAL_FEATURES)[number]['id'];
 
