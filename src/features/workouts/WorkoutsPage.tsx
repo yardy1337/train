@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { StackView, rectOf, type Rect, type StackLayer } from '../../components/StackView';
 import { AnimatePresence, motion } from 'motion/react';
-import { CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Plus, Settings, Share, X, SlidersHorizontal, Target } from 'lucide-react';
+import { Bot, CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Plus, Settings, Share, X, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
 import { setSetting, useSetting } from '../../db/settings';
 import { Button, Card, IconButton, PageHeader, BackButton } from '../../components/ui';
@@ -27,6 +27,7 @@ import { WorkoutHistory } from './WorkoutHistory';
 import { WeekStrip } from './WeekStrip';
 import { lookOf } from '../../data/programLook';
 import { SettingsSheet } from '../settings/SettingsSheet';
+import { HormoneSheet } from '../progress/HormoneAdvisor';
 
 /** «Доброе утро · понедельник, 10 ноября» */
 function greeting() {
@@ -201,6 +202,8 @@ function CatalogHome({
   onCreate: () => void;
 }) {
   const [settings, setSettings] = useState(false);
+  const [advisor, setAdvisor] = useState(false);
+  const canAdvise = useAllowed('hormones');
   const [finishedId, setFinishedId] = useState<number | null>(() => {
     try {
       const v = sessionStorage.getItem('justFinished');
@@ -237,6 +240,11 @@ function CatalogHome({
             <IconButton label="История" onClick={onHistory} className="bg-white/10 text-white active:bg-white/20">
               <History size={18} />
             </IconButton>
+            {canAdvise && (
+              <IconButton label="Советчик по гормонам" onClick={() => setAdvisor(true)} className="bg-white/10 text-gold active:bg-white/20">
+                <Bot size={19} strokeWidth={2.2} />
+              </IconButton>
+            )}
             <IconButton label="Настройки" onClick={() => setSettings(true)} className="bg-white/10 text-white active:bg-white/20">
               <Settings size={18} />
             </IconButton>
@@ -383,6 +391,7 @@ function CatalogHome({
         </Item>}
       </div>
       <SettingsSheet open={settings} onClose={() => setSettings(false)} />
+      <HormoneSheet open={advisor} onClose={() => setAdvisor(false)} />
     </Screen>
   );
 }

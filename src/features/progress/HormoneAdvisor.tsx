@@ -21,10 +21,17 @@ export function HormoneCard({ index }: { index: number }) {
           Открыть
         </Button>
       </Card>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Советчик по гормонам" full>
-        {open && <Advisor />}
-      </Sheet>
+      <HormoneSheet open={open} onClose={() => setOpen(false)} />
     </>
+  );
+}
+
+/** Окно советчика — открывается с карточки на «Прогрессе» и значком робота на главном экране. */
+export function HormoneSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Sheet open={open} onClose={onClose} title="Советчик по гормонам" full>
+      {open && <Advisor />}
+    </Sheet>
   );
 }
 
