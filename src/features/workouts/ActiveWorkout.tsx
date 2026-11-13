@@ -1,5 +1,5 @@
 import { Screen } from '../../components/motion';
-import { ArrowDown, ArrowLeftRight, ArrowUp, Check, Disc3, Info, NotebookPen, Flame, Lightbulb, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp, Trophy } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, Check, ChevronsDown, Disc3, Info, NotebookPen, Flame, Lightbulb, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp, Trophy } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../../db/db';
@@ -9,7 +9,7 @@ import { uid } from '../../lib/date';
 import { SwapSheet } from './SwapSheet';
 import { ExercisePicker } from './ExercisePicker';
 import { useRestTimer } from '../../components/RestTimer';
-import { findLastResult, formatReps, formatSets, shouldIncrease } from '../../lib/workout';
+import { DROPSET_LABEL, findLastResult, formatReps, formatSets, isDropSet, shouldIncrease } from '../../lib/workout';
 import { formatDuration, formatShort } from '../../lib/date';
 import type { SetEntry, Workout, WorkoutExercise } from '../../types';
 import { normName } from '../../lib/workout';
@@ -273,6 +273,14 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                       <NotebookPen size={11} strokeWidth={2.6} /> {ex.note}
                     </div>
                   ) : null}
+                  {ex.dropset && (
+                    <div className="mt-1 flex items-start gap-1 rounded-md bg-fg/[.06] px-2 py-1 text-[11px] font-bold leading-snug text-fg/75">
+                      <ChevronsDown size={12} strokeWidth={2.8} className="mt-px shrink-0" />
+                      <span>
+                        Д{DROPSET_LABEL[ex.dropset].slice(1)}: сразу сбрось вес на 20–30% и продолжай до отказа без отдыха
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {increaseNow && !featSuggest && (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gold-soft px-2.5 py-1 text-xs font-bold text-fg">
@@ -346,7 +354,10 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                       {isRecord(s, best.get(normName(ex.name))) ? (
                         <BounceTrophy size={16} className="mx-auto text-gold" />
                       ) : (
-                        <span className="text-center text-sm font-bold text-fg/40">{si + 1}</span>
+                        <span className="text-center text-sm font-bold leading-none text-fg/40">
+                          {si + 1}
+                          {isDropSet(ex.dropset, si, ex.sets.length) && <span className="mt-0.5 block text-[9px] font-extrabold uppercase text-accent">дроп</span>}
+                        </span>
                       )}
                       <NumInput
                         ariaLabel={`Вес, подход ${si + 1}`}

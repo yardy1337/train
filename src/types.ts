@@ -13,7 +13,11 @@ export interface ProgramExercise {
   rest: number;
   /** Суперсет: выполняется подряд со следующим упражнением, отдых — только после следующего. */
   supersetNext?: boolean;
+  /** Дропсет: в последнем подходе или во всех — сразу сбросить вес и продолжить до отказа. */
+  dropset?: Dropset;
 }
+
+export type Dropset = 'last' | 'all';
 
 export interface ProgramDay {
   id: string;
@@ -39,6 +43,7 @@ export interface WorkoutExercise {
   rest: number;
   sets: SetEntry[];
   supersetNext?: boolean;
+  dropset?: Dropset;
 }
 
 export interface Workout {

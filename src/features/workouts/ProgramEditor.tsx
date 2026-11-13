@@ -1,18 +1,27 @@
 import { Screen, spring } from '../../components/motion';
 import { motion } from 'motion/react';
-import { ArrowDown, ArrowLeftRight, ArrowUp, Plus, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, ChevronsDown, Plus, Trash2, X } from 'lucide-react';
 import { SwapSheet } from './SwapSheet';
 import { useState } from 'react';
 import { db } from '../../db/db';
 import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, findProgram } from '../../data/programs';
 import { getSetting } from '../../db/settings';
-import { BackButton, Button, Card, Field, NumInput, PageHeader, Sheet, TextInput } from '../../components/ui';
+import { BackButton, Button, Card, Field, NumInput, PageHeader, Segmented, Sheet, TextInput } from '../../components/ui';
 import { uid } from '../../lib/date';
-import { formatTarget } from '../../lib/workout';
-import type { ProgramDay, ProgramExercise } from '../../types';
+import { DROPSET_LABEL, formatTarget } from '../../lib/workout';
+import type { Dropset, ProgramDay, ProgramExercise } from '../../types';
 import { useProgram } from './hooks';
 import { ExercisePicker } from './ExercisePicker';
 import { defaultsFor } from '../../data/exercises';
+
+const NEXT_DROP: Record<Dropset | 'none', Dropset | undefined> = { none: 'last', last: 'all', all: undefined };
+/** Убрать пустые флаги, чтобы не хранить undefined-поля. */
+const clean = (e: ProgramExercise): ProgramExercise => {
+  const out = { ...e };
+  if (!out.supersetNext) delete out.supersetNext;
+  if (!out.dropset) delete out.dropset;
+  return out;
+};
 
 const emptyExercise = (): ProgramExercise => ({ id: uid(), name: '', sets: 3, repsMin: 8, repsMax: 12, rest: 60 });
 
@@ -69,7 +78,7 @@ export function ProgramEditor({
     if (!editing || !editing.ex.name.trim()) return;
     const day = days.find((d) => d.id === editing.dayId);
     if (!day) return;
-    const ex = { ...editing.ex, name: editing.ex.name.trim() };
+    const ex = clean({ ...editing.ex, name: editing.ex.name.trim() });
     const exercises = editing.isNew
       ? [...day.exercises, ex]
       : day.exercises.map((e) => (e.id === ex.id ? ex : e));
@@ -101,6 +110,11 @@ export function ProgramEditor({
     });
   };
 
+  const setFlag = (day: ProgramDay, id: string, patch: Partial<ProgramExercise>) => {
+    const fresh = days.find((d) => d.id === day.id) ?? day;
+    saveDay({ ...fresh, exercises: fresh.exercises.map((x) => (x.id === id ? clean({ ...x, ...patch }) : x)) });
+  };
+
   const setEx = (patch: Partial<ProgramExercise>) => editing && setEditing({ ...editing, ex: { ...editing.ex, ...patch } });
 
   return (
@@ -127,7 +141,8 @@ export function ProgramEditor({
             </div>
             <ul className="divide-y divide-fg/[.06]">
               {day.exercises.map((e, idx) => (
-                <motion.li key={e.id} layout transition={spring} className="flex items-center gap-1 py-2">
+                <motion.li key={e.id} layout transition={spring} className="py-2">
+                  <div className="flex items-center gap-1">
                   <button
                     className="flex-1 text-left"
                     onClick={() => openEditor({ dayId: day.id, ex: { ...e }, isNew: false })}
@@ -137,8 +152,8 @@ export function ProgramEditor({
                       {formatTarget(e.sets, e.repsMin, e.repsMax, e.note)}
                       {e.note && (e.repsMin || e.repsMax) ? ` · ${e.note}` : ''} · {e.supersetNext ? 'без отдыха' : `${e.rest} с`}
                     </div>
-                    {(e.supersetNext || day.exercises[idx - 1]?.supersetNext) && (
-                      <div className="mt-0.5 text-[11px] font-extrabold text-gold-strong">⇄ суперсет {e.supersetNext ? '1/2' : '2/2'}</div>
+                    {!e.supersetNext && day.exercises[idx - 1]?.supersetNext && (
+                      <div className="mt-0.5 text-[11px] font-extrabold text-gold-strong">⇄ суперсет 2/2 · после — отдых</div>
                     )}
                   </button>
                   <button className="grid h-8 w-8 place-items-center rounded-full text-accent active:bg-fg/[.06]" onClick={() => setSwapping({ day, id: e.id, name: e.name })} aria-label="Заменить на похожее">
@@ -153,6 +168,29 @@ export function ProgramEditor({
                   <button className="grid h-8 w-8 place-items-center rounded-full text-red-600 active:bg-red-500/15" onClick={() => removeEx(day, e.id)} aria-label="Удалить">
                     <X size={16} strokeWidth={2.4} />
                   </button>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {idx < day.exercises.length - 1 && (
+                      <button
+                        onClick={() => setFlag(day, e.id, { supersetNext: e.supersetNext ? undefined : true })}
+                        aria-pressed={!!e.supersetNext}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors active:scale-95 ${
+                          e.supersetNext ? 'border-gold bg-gold-soft text-gold-strong' : 'border-fg/12 text-fg/50'
+                        }`}
+                      >
+                        <ArrowLeftRight size={12} strokeWidth={2.8} /> {e.supersetNext ? 'Суперсет со следующим' : '+ суперсет'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setFlag(day, e.id, { dropset: NEXT_DROP[e.dropset ?? 'none'] })}
+                      aria-pressed={!!e.dropset}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition-colors active:scale-95 ${
+                        e.dropset ? 'border-accent bg-accent-soft text-fg' : 'border-fg/12 text-fg/50'
+                      }`}
+                    >
+                      <ChevronsDown size={12} strokeWidth={2.8} /> {e.dropset ? (e.dropset === 'last' ? 'Дропсет: последний подход' : 'Дропсет: каждый подход') : '+ дропсет'}
+                    </button>
+                  </div>
                 </motion.li>
               ))}
             </ul>
@@ -229,6 +267,21 @@ export function ProgramEditor({
               <input type="checkbox" checked={!!editing.ex.supersetNext} onChange={(e) => setEx({ supersetNext: e.target.checked || undefined })} className="peer sr-only" />
               <span className="relative h-7 w-12 shrink-0 rounded-full bg-fg/15 transition-colors peer-checked:bg-gold after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5" />
             </label>
+            <div>
+              <span className="eyebrow mb-1.5 block">Дропсет</span>
+              <Segmented<Dropset | 'none'>
+                value={editing.ex.dropset ?? 'none'}
+                onChange={(v) => setEx({ dropset: v === 'none' ? undefined : v })}
+                options={[
+                  { id: 'none', label: 'Нет' },
+                  { id: 'last', label: 'Последний' },
+                  { id: 'all', label: 'Каждый' },
+                ]}
+              />
+              <p className="mt-1 text-xs font-medium text-fg/45">
+                {editing.ex.dropset ? `Сразу после подхода сбрось вес на 20–30% и продолжай до отказа, без отдыха (${DROPSET_LABEL[editing.ex.dropset]}).` : 'Сброс веса на 20–30% и продолжение до отказа без отдыха.'}
+              </p>
+            </div>
             <Field label="Отдых между подходами">
               <div className="grid grid-cols-3 gap-2">
                 {[

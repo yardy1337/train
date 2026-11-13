@@ -544,6 +544,7 @@ function ProgramPage({
                     <span className="shrink-0 text-right font-semibold tabular-nums text-fg/40">
                       {formatTarget(cycleInfo?.deload ? Math.max(1, Math.ceil(e.sets / 2)) : e.sets, e.repsMin, e.repsMax, e.note)}
                       {e.supersetNext && <span className="block text-[10px] font-extrabold text-gold-strong">суперсет ⇄</span>}
+                      {e.dropset && <span className="block text-[10px] font-extrabold text-accent">{e.dropset === 'all' ? 'дропсеты' : 'дропсет'} ⇣</span>}
                     </span>
                   </li>
                 ))}

@@ -90,6 +90,7 @@ export function createWorkout(day: ProgramDay, history: Workout[], opts: { deloa
         note: e.note,
         rest: e.rest,
         ...(e.supersetNext ? { supersetNext: true } : {}),
+        ...(e.dropset ? { dropset: e.dropset } : {}),
         sets: Array.from({ length: sets }, (_, i) => ({
           weight: lastSets[i]?.weight ?? lastSets[lastSets.length - 1]?.weight ?? null,
           reps: null,
@@ -108,3 +109,9 @@ export function nextDayId(days: ProgramDay[], history: Workout[]): string | unde
   const idx = days.findIndex((d) => d.id === last.dayId);
   return days[(idx + 1) % days.length]?.id ?? days[0].id;
 }
+
+/** Подход с дропсетом? (последний — при «last», любой — при «all»). */
+export const isDropSet = (dropset: 'last' | 'all' | undefined, si: number, total: number) =>
+  dropset === 'all' || (dropset === 'last' && si === total - 1);
+
+export const DROPSET_LABEL = { last: 'дропсет в последнем подходе', all: 'дропсет в каждом подходе' } as const;

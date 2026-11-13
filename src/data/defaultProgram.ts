@@ -1,12 +1,12 @@
-import type { ProgramDay, ProgramExercise } from '../types';
+import type { Dropset, ProgramDay, ProgramExercise } from '../types';
 
 const BASE = 90; // отдых для базовых упражнений
 const ISO = 60; // отдых для изоляции
 
-type Ex = [name: string, sets: number, repsMin: number, repsMax: number, rest: number, note?: string, supersetNext?: boolean];
+type Ex = [name: string, sets: number, repsMin: number, repsMax: number, rest: number, note?: string, supersetNext?: boolean, dropset?: Dropset];
 
 function day(id: string, order: number, name: string, title: string, list: Ex[]): ProgramDay {
-  const exercises: ProgramExercise[] = list.map(([n, sets, repsMin, repsMax, rest, note, supersetNext], i) => ({
+  const exercises: ProgramExercise[] = list.map(([n, sets, repsMin, repsMax, rest, note, supersetNext, dropset], i) => ({
     id: `${id}-${i + 1}`,
     name: n,
     sets,
@@ -15,6 +15,7 @@ function day(id: string, order: number, name: string, title: string, list: Ex[])
     rest,
     ...(note ? { note } : {}),
     ...(supersetNext ? { supersetNext: true } : {}),
+    ...(dropset ? { dropset } : {}),
   }));
   return { id, order, name, title, exercises };
 }
@@ -94,7 +95,7 @@ export function createDefaultProgram(): ProgramDay[] {
       ['Жим гантелей сидя', 3, 8, 10, REST],
       ['Разводка гантелей лёжа', 3, 12, 15, 0, undefined, true],
       ['Тяга к лицу на блоке', 3, 12, 15, SS],
-      ['Махи гантелями в стороны', 3, 15, 20, REST, 'последний подход: дропсет'],
+      ['Махи гантелями в стороны', 3, 15, 20, REST, undefined, false, 'last'],
       ['Молотки', 3, 12, 12, 0, undefined, true],
       ['Разгибания на трицепс на блоке вниз', 3, 12, 12, SS],
     ]),

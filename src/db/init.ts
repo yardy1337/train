@@ -39,6 +39,22 @@ export async function initDb() {
       }
       await db.settings.put({ key: 'programVersion', value: PROGRAM_VERSION });
     }
+    // Дропсет из заметки → отдельная настройка упражнения (правки пользователя не трогаем).
+    if (!(await db.settings.get('dropsetMigrated'))) {
+      const days = await db.programDays.toArray();
+      for (const d of days) {
+        if (!d.exercises.some((e) => e.note === 'последний подход: дропсет')) continue;
+        await db.programDays.put({
+          ...d,
+          exercises: d.exercises.map((e) => {
+            if (e.note !== 'последний подход: дропсет') return e;
+            const { note: _note, ...rest } = e;
+            return { ...rest, dropset: 'last' as const };
+          }),
+        });
+      }
+      await db.settings.put({ key: 'dropsetMigrated', value: true });
+    }
     const seeded = await db.settings.get('foodsSeedVersion');
     if (seeded?.value !== FOODS_SEED_VERSION) {
       const foods = builtinFoods();
