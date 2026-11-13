@@ -1,3 +1,4 @@
+import { ScreenSkeleton } from './components/ui';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
 import { scrollToTop } from './lib/smoothScroll';
@@ -44,7 +45,7 @@ export default function App() {
             {tab === 'workouts' && <WorkoutsPage key="workouts" />}
             {tab === 'nutrition' && <NutritionPage key="nutrition" />}
             {tab === 'progress' && (
-              <Suspense key="progress" fallback={null}>
+              <Suspense key="progress" fallback={<ScreenSkeleton title="Прогресс" />}>
                 <ProgressPage />
               </Suspense>
             )}

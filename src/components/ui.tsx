@@ -1,7 +1,7 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, X } from 'lucide-react';
+import { ChevronLeft, Sparkles, X, type LucideIcon } from 'lucide-react';
 import { parseNum } from '../lib/format';
 import { appear, itemVariants, spring } from './motion';
 import { lockScroll } from '../lib/smoothScroll';
@@ -296,8 +296,50 @@ export function ProgressBar({
   );
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-10 text-center text-sm font-medium text-fg/40">{children}</p>;
+/** Пустой экран: иллюстрация (значок в «облаке» из кругов) и подпись. */
+export function Empty({ children, icon: Icon = Sparkles, title }: { children: ReactNode; icon?: LucideIcon; title?: string }) {
+  return (
+    <div className="flex flex-col items-center px-6 py-8 text-center">
+      <div className="floaty relative mb-4 h-24 w-24">
+        <span className="absolute inset-0 rounded-full bg-accent-soft" />
+        <span className="absolute inset-3 rounded-full bg-gradient-to-br from-navy-2 to-navy shadow-lift" />
+        <span className="absolute -right-1 top-2 h-5 w-5 rounded-full bg-gold shadow-gold" />
+        <span className="absolute -left-2 bottom-3 h-3 w-3 rounded-full bg-gold/60" />
+        <span className="absolute inset-3 grid place-items-center text-gold">
+          <Icon size={30} strokeWidth={2.1} />
+        </span>
+      </div>
+      {title && <div className="mb-1 font-extrabold">{title}</div>}
+      <p className="max-w-[16rem] text-sm font-medium leading-snug text-fg/50">{children}</p>
+    </div>
+  );
+}
+
+/** Серая заготовка с бегущим бликом — пока грузятся данные. */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <div aria-hidden className={`skeleton rounded-2xl ${className}`} />;
+}
+
+/** Заставка целого экрана: шапка и несколько карточек. */
+export function ScreenSkeleton({ title }: { title: string }) {
+  // Если данные пришли быстрее 0,2 с — заставку не показываем вовсе (без мелькания).
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 200);
+    return () => clearTimeout(t);
+  }, []);
+  if (!show) return null;
+  return (
+    <div aria-busy="true" aria-label="Загрузка">
+      <PageHeader title={title} />
+      <div className="space-y-3 px-4">
+        <Skeleton className="h-44" />
+        <Skeleton className="h-28" />
+        <Skeleton className="h-20" />
+        <Skeleton className="h-20" />
+      </div>
+    </div>
+  );
 }
 
 export function Segmented<T extends string>({

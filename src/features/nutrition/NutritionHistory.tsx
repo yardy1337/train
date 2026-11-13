@@ -1,3 +1,4 @@
+import { NotebookPen } from 'lucide-react';
 import { Screen } from '../../components/motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
@@ -34,7 +35,7 @@ export function NutritionHistory({ onBack, onOpenDay }: { onBack: () => void; on
             </div>
           </Card>
         )}
-        {days && !days.length && <Empty>Записей пока нет</Empty>}
+        {days && !days.length && <Empty icon={NotebookPen} title="Записей пока нет">Добавь еду в дневник — здесь появится история по дням</Empty>}
         {days?.map((d) => {
           const pct = goals.kcal ? Math.round((d.kcal / goals.kcal) * 100) : 0;
           return (

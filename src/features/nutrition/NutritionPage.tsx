@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { EASE, Screen } from '../../components/motion';
 import { CalorieRing } from '../../components/CalorieRing';
 import { WaterCard } from './WaterCard';
+import { MealPlanCard } from './MealPlan';
 import { ChevronLeft, ChevronRight, History, Plus, Target } from 'lucide-react';
 import { MEAL_ICONS } from '../../components/mealIcons';
 import { db } from '../../db/db';
@@ -138,6 +139,7 @@ export function NutritionPage() {
         </Card>
 
         <WaterCard date={date} index={2} />
+        <MealPlanCard date={date} index={2} />
 
         {MEALS.map((meal, mi) => {
           const items = entries.filter((e) => e.meal === meal.id);

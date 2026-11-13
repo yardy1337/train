@@ -1,3 +1,4 @@
+import { LineChart as LineChartIcon } from 'lucide-react';
 import { Screen } from '../../components/motion';
 import { Settings, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
@@ -17,6 +18,7 @@ import type { WeightEntry } from '../../types';
 import { useHistory } from '../workouts/hooks';
 import { useAllowed, useFeature } from '../../lib/features';
 import { HormoneCard } from './HormoneAdvisor';
+import { Achievements } from './Achievements';
 
 const EMPTY: WeightEntry[] = [];
 
@@ -53,6 +55,7 @@ export function ProgressPage() {
       <div className="space-y-3 px-4 pb-4">
         <MuscleMap index={1} />
         {hormones && <HormoneCard index={2} />}
+        <Achievements index={2} />
         <BodyWeight />
         {measurements && <Measurements index={2} />}
         <Records index={2} />
@@ -182,7 +185,7 @@ function ExerciseProgress() {
     <Card index={2} className="space-y-3">
       <h2 className="text-lg font-extrabold tracking-tight">Рабочие веса</h2>
       {!names.length ? (
-        <Empty>Заверши первую тренировку — здесь появятся графики по упражнениям</Empty>
+        <Empty icon={LineChartIcon} title="Графиков пока нет">Заверши первую тренировку — здесь появятся графики по упражнениям</Empty>
       ) : (
         <>
           <select

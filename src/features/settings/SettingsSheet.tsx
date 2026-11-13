@@ -115,7 +115,7 @@ function RestSection() {
           </div>
         </div>
         <Switch title="Звук" hint="Короткий сигнал, когда отдых кончился" on={s.sound} onChange={(v) => set({ sound: v })} />
-        <Switch title="Вибрация" hint="Работает на Android; iPhone не даёт сайтам вибрировать" on={s.vibrate} onChange={(v) => set({ vibrate: v })} />
+        <Switch title="Вибрация" hint="На iPhone — тактильные щелчки (iOS 18 и новее)" on={s.vibrate} onChange={(v) => set({ vibrate: v })} />
         <Switch title="Уведомление" hint="Если приложение свёрнуто — придёт уведомление" on={s.notify} onChange={toggleNotify} />
         {note && <p className="text-xs font-semibold text-amber-600">{note}</p>}
         <p className="text-[11px] font-medium text-fg/45">Во время отдыха время можно поправить кнопками −15 и +15 на таймере.</p>

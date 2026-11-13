@@ -1,3 +1,4 @@
+import { ChefHat, Clock, SearchX, Star } from 'lucide-react';
 import { Camera, ChevronLeft, Loader2, Plus, ScanBarcode } from 'lucide-react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -271,11 +272,11 @@ export function FoodPicker({
             </div>
           )}
           {tab === 'search' && q.trim() && !local.length && !cloudNew.length && cloud.status !== 'loading' && (
-            <Empty>Ничего не нашлось — можно создать свой продукт</Empty>
+            <Empty icon={SearchX} title="Ничего не нашлось">Попробуй другое слово или создай свой продукт во вкладке «Мои»</Empty>
           )}
-          {tab === 'fav' && !favorites.length && <Empty>Нажмите звёздочку у продукта, чтобы добавить его сюда</Empty>}
-          {tab === 'recent' && !recent.length && <Empty>Здесь появятся продукты, которые вы добавляли</Empty>}
-          {tab === 'mine' && !mine.length && <Empty>Свои продукты и рецепты появятся здесь</Empty>}
+          {tab === 'fav' && !favorites.length && <Empty icon={Star} title="Избранное пусто">Нажми звёздочку у продукта, чтобы добавить его сюда</Empty>}
+          {tab === 'recent' && !recent.length && <Empty icon={Clock}>Здесь появятся продукты, которые ты добавлял</Empty>}
+          {tab === 'mine' && !mine.length && <Empty icon={ChefHat}>Свои продукты и блюда появятся здесь</Empty>}
 
           {tab === 'search' && q.trim().length >= 2 && (
             <div className="border-t border-fg/[.06] pt-3">

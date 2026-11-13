@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { showRestNotification, useRestSettings } from '../lib/restSettings';
+import { beep, haptic, unlockAudio } from '../lib/feedback';
 
 interface TimerState {
   endAt: number;
@@ -16,26 +17,6 @@ const Ctx = createContext<TimerApi>({ start: () => {}, stop: () => {} });
 export const useRestTimer = () => useContext(Ctx);
 
 const STORAGE_KEY = 'restTimer';
-
-function beep() {
-  try {
-    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AC();
-    [0, 0.25, 0.5].forEach((t) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.frequency.value = 880;
-      g.gain.setValueAtTime(0.25, ctx.currentTime + t);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.2);
-      o.connect(g).connect(ctx.destination);
-      o.start(ctx.currentTime + t);
-      o.stop(ctx.currentTime + t + 0.2);
-    });
-    setTimeout(() => ctx.close(), 1000);
-  } catch {
-    /* звук недоступен — не страшно */
-  }
-}
 
 export function RestTimerProvider({ children }: { children: ReactNode }) {
   const settings = useRestSettings();
@@ -54,6 +35,8 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   const fired = useRef(false);
 
   const start = useCallback((seconds: number, label = 'Отдых') => {
+    // Старт таймера — всегда по нажатию: тут и разблокируем звук для сигнала в конце.
+    unlockAudio();
     const s = { endAt: Date.now() + seconds * 1000, total: seconds, label };
     fired.current = false;
     setFinished(false);
@@ -89,7 +72,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
       fired.current = true;
       setFinished(true);
       const s = settingsRef.current;
-      if (s.vibrate) navigator.vibrate?.([300, 150, 300]);
+      if (s.vibrate) haptic([300, 150, 300, 150, 300]);
       if (s.sound) beep();
       if (s.notify && document.visibilityState === 'hidden') void showRestNotification(state.label);
       const t = setTimeout(stop, 4000);

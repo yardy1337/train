@@ -17,6 +17,7 @@ import { bestMap, formatBest, isRecord } from '../../lib/records';
 import { fmtKg, isBarbell, suggestWeight, warmupSets } from '../../lib/training';
 import { useFeature } from '../../lib/features';
 import { PlateSheet } from './PlateSheet';
+import { haptic } from '../../lib/feedback';
 import { restFor, useRestSettings } from '../../lib/restSettings';
 import { BounceTrophy, DrawCheck } from '../../components/LiveIcons';
 import { TechniqueSheet, useHasTechnique } from './TechniqueSheet';
@@ -92,14 +93,14 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
     const ex = w.exercises[i];
     const s = ex.sets[si];
     if (s.done) return updateSet(i, si, { done: false });
-    navigator.vibrate?.(15); // лёгкий отклик на Android
+    haptic(15); // лёгкий отклик (Android — вибрация, iPhone — тактильный щелчок)
     const prevSet = prev[i]?.exercise.sets.filter((x) => x.done)[si];
     const reps = s.reps ?? prevSet?.reps ?? (ex.repsMax || ex.repsMin || null);
     const weight = s.weight ?? prevSet?.weight ?? null;
     updateSet(i, si, { done: true, reps, weight });
     const b = best.get(normName(ex.name));
     if (isRecord({ done: true, reps, weight }, b) && !ex.sets.some((x, k) => k !== si && isRecord(x, b) && (x.weight ?? 0) >= (weight ?? 0))) {
-      navigator.vibrate?.([40, 60, 40]);
+      haptic([40, 60, 40]);
       setToast(`Новый рекорд: ${ex.name} — ${weight ? `${fmtKg(weight)} кг × ${reps}` : `${reps} повт.`}`);
     }
     const isLastSetOfLastEx = i === w.exercises.length - 1 && si === ex.sets.length - 1;

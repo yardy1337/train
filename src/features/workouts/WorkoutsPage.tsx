@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Bot, CalendarDays, Check, ChevronRight, Dumbbell, History, Pin, PinOff, Play, Plus, Settings, Share, X, SlidersHorizontal, Target } from 'lucide-react';
 import { db } from '../../db/db';
 import { setSetting, useSetting } from '../../db/settings';
-import { Button, Card, IconButton, PageHeader, BackButton } from '../../components/ui';
+import { Button, Card, IconButton, PageHeader, BackButton, ScreenSkeleton } from '../../components/ui';
 import { Item, Screen } from '../../components/motion';
 import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, allPrograms, findProgram, programOfDay, templateDays, type CatalogProgram } from '../../data/programs';
 import { createCustomProgram, customDayStore, deleteCustomProgram, newDay, patchCustomProgram, useCustomPrograms } from '../../data/customPrograms';
@@ -149,7 +149,9 @@ export function WorkoutsPage() {
               }
             />
           </motion.div>
-        ) : null}
+        ) : (
+          <ScreenSkeleton key="loading" title="Тренировки" />
+        )}
       </AnimatePresence>
       <CustomProgramSheet
         open={creating}

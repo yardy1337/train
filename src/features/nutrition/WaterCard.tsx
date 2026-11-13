@@ -1,3 +1,4 @@
+import { haptic } from '../../lib/feedback';
 import { GlassWater, Minus, Plus } from 'lucide-react';
 import { Card } from '../../components/ui';
 import { setSetting, useSetting } from '../../db/settings';
@@ -13,7 +14,7 @@ export function WaterCard({ date, index }: { date: string; index: number }) {
   const per = goal / GLASSES;
   const filled = Math.min(GLASSES, Math.round(ml / per));
   const set = (v: number) => {
-    navigator.vibrate?.(10);
+    haptic(10);
     setSetting(key, Math.max(0, Math.min(6000, v)));
   };
   return (

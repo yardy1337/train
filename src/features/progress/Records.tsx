@@ -18,7 +18,7 @@ export function Records({ index }: { index: number }) {
         {rows.length > 0 && <span className="text-sm font-bold text-fg/40">{rows.length}</span>}
       </div>
       {!rows.length ? (
-        <Empty>Рекорды появятся после первой тренировки</Empty>
+        <Empty icon={Trophy} title="Рекордов пока нет">Они появятся, как только побьёшь свой лучший результат</Empty>
       ) : (
         <>
           <ul className="divide-y divide-fg/[.06]">

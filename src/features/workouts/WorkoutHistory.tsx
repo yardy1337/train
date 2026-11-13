@@ -1,3 +1,4 @@
+import { CalendarX2, Filter } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { ArrowDownWideNarrow, ChevronDown, Clock, Dumbbell, Share, Trash2, Weight } from 'lucide-react';
@@ -101,7 +102,7 @@ export function WorkoutHistory({ onBack }: { onBack: () => void }) {
     <Screen kind="push">
       <PageHeader title="История" left={<BackButton onClick={onBack} />} />
       <div className="space-y-3 px-4 pb-4">
-        {!history.length && <Empty>Пока нет завершённых тренировок</Empty>}
+        {!history.length && <Empty icon={CalendarX2} title="История пуста">Заверши первую тренировку — она появится здесь</Empty>}
 
         {history.length > 0 && (
           <>
@@ -251,7 +252,7 @@ export function WorkoutHistory({ onBack }: { onBack: () => void }) {
             })}
           </AnimatePresence>
         </LayoutGroup>
-        {history.length > 0 && !list.length && <Empty>Нет тренировок для этого дня</Empty>}
+        {history.length > 0 && !list.length && <Empty icon={Filter}>Нет тренировок для этого дня</Empty>}
       </div>
     </Screen>
   );
