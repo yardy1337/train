@@ -1,5 +1,5 @@
 import { Screen } from '../../components/motion';
-import { ArrowDown, ArrowLeftRight, ArrowUp, Check, Disc3, Info, Flame, Lightbulb, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp, Trophy } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, Check, Disc3, Info, NotebookPen, Flame, Lightbulb, MoreHorizontal, Plus, SlidersHorizontal, Trash2, TrendingUp, Trophy } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../../db/db';
@@ -76,6 +76,12 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
   // Личные рекорды до сегодняшней тренировки.
   const best = useMemo(() => bestMap(history, w.id), [history, w.id]);
   const [toast, setToast] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hint) return;
+    const t = setTimeout(() => setHint(null), 2500);
+    return () => clearTimeout(t);
+  }, [hint]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3200);
@@ -104,7 +110,12 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
       setToast(`Новый рекорд: ${ex.name} — ${weight ? `${fmtKg(weight)} кг × ${reps}` : `${reps} повт.`}`);
     }
     const isLastSetOfLastEx = i === w.exercises.length - 1 && si === ex.sets.length - 1;
-    if (!isLastSetOfLastEx) timer.start(restFor(restSettings, ex.rest), `Отдых · ${ex.name}`);
+    const partner = ex.supersetNext ? w.exercises[i + 1] : undefined;
+    if (partner) {
+      // Суперсет: без отдыха сразу ко второму упражнению, отдых — после него.
+      timer.stop();
+      setHint(`Суперсет: сразу «${partner.name}»`);
+    } else if (!isLastSetOfLastEx) timer.start(restFor(restSettings, ex.rest), `Отдых · ${ex.name}`);
   };
 
   const finish = async () => {
@@ -222,6 +233,11 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
             Отменить
           </button>
         </div>
+        {w.deload && (
+          <div className="rounded-2xl bg-accent-soft px-3 py-2 text-xs font-bold text-fg/75">
+            Неделя разгрузки: подходов вдвое меньше, вес — как обычно или чуть легче. Это нужно для восстановления.
+          </div>
+        )}
         <div className="h-2 overflow-hidden rounded-full bg-fg/[.06]">
           <div className="h-full rounded-full bg-gold transition-all duration-500" style={{ width: `${(doneCount / Math.max(1, totalSets)) * 100}%` }} />
         </div>
@@ -231,7 +247,13 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
           const increaseNow = last ? shouldIncrease({ ...last.exercise, repsMax: ex.repsMax, plannedSets: ex.plannedSets }) : false;
           const topReachedToday = shouldIncrease(ex);
           return (
-            <Card key={ex.exerciseId} index={i}>
+            <Card key={ex.exerciseId} index={i} className={ex.supersetNext || w.exercises[i - 1]?.supersetNext ? 'border-l-4 border-l-gold' : ''}>
+              {(ex.supersetNext && w.exercises[i + 1]) || w.exercises[i - 1]?.supersetNext ? (
+                <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-gold-soft px-2.5 py-0.5 text-[11px] font-extrabold text-gold-strong">
+                  <ArrowLeftRight size={12} strokeWidth={2.8} />
+                  {ex.supersetNext && w.exercises[i + 1] ? `Суперсет 1/2 · дальше «${w.exercises[i + 1].name}»` : 'Суперсет 2/2 · после — отдых'}
+                </div>
+              ) : null}
               <div className="flex items-start gap-2">
                 <div className="flex-1">
                   {hasTechnique(ex.name) ? (
@@ -244,8 +266,13 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
                   )}
                   <div className="mt-0.5 text-xs text-fg/55">
                     {ex.plannedSets}×{formatReps(ex.repsMin, ex.repsMax, ex.note)}
-                    {ex.note && (ex.repsMin || ex.repsMax) ? ` · ${ex.note}` : ''} · отдых {restFor(restSettings, ex.rest)} с
+                    {ex.supersetNext && w.exercises[i + 1] ? ' · без отдыха' : ` · отдых ${restFor(restSettings, ex.rest)} с`}
                   </div>
+                  {ex.note && (ex.repsMin || ex.repsMax) ? (
+                    <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-fg/75">
+                      <NotebookPen size={11} strokeWidth={2.6} /> {ex.note}
+                    </div>
+                  ) : null}
                 </div>
                 {increaseNow && !featSuggest && (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gold-soft px-2.5 py-1 text-xs font-bold text-fg">
@@ -447,6 +474,22 @@ export function ActiveWorkout({ initial, history }: { initial: Workout; history:
 
       <TechniqueSheet name={techFor} onClose={() => setTechFor(null)} />
       <PlateSheet open={plateFor !== undefined} initial={plateFor ?? null} onClose={() => setPlateFor(undefined)} />
+
+      {/* Подсказка суперсета */}
+      <AnimatePresence>
+        {hint && !toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="fixed inset-x-0 bottom-[calc(80px+env(safe-area-inset-bottom))] z-[60] px-3"
+          >
+            <div className="mx-auto flex max-w-lg items-center gap-2 rounded-2xl bg-navy px-4 py-3 text-sm font-extrabold text-white shadow-xl">
+              <ArrowLeftRight size={18} className="shrink-0 text-gold" /> {hint}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Рекорд */}
       <AnimatePresence>

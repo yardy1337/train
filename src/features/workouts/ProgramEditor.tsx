@@ -135,8 +135,11 @@ export function ProgramEditor({
                     <div className="text-sm font-semibold">{e.name}</div>
                     <div className="text-xs text-fg/45">
                       {formatTarget(e.sets, e.repsMin, e.repsMax, e.note)}
-                      {e.note && (e.repsMin || e.repsMax) ? ` · ${e.note}` : ''} · {e.rest} с
+                      {e.note && (e.repsMin || e.repsMax) ? ` · ${e.note}` : ''} · {e.supersetNext ? 'без отдыха' : `${e.rest} с`}
                     </div>
+                    {(e.supersetNext || day.exercises[idx - 1]?.supersetNext) && (
+                      <div className="mt-0.5 text-[11px] font-extrabold text-gold-strong">⇄ суперсет {e.supersetNext ? '1/2' : '2/2'}</div>
+                    )}
                   </button>
                   <button className="grid h-8 w-8 place-items-center rounded-full text-accent active:bg-fg/[.06]" onClick={() => setSwapping({ day, id: e.id, name: e.name })} aria-label="Заменить на похожее">
                     <ArrowLeftRight size={16} />
@@ -211,13 +214,21 @@ export function ProgramEditor({
                 <NumInput decimal={false} value={editing.ex.repsMax || null} placeholder="—" onChange={(v) => setEx({ repsMax: Math.round(v ?? 0) })} />
               </Field>
             </div>
-            <Field label="Пояснение (необязательно)">
+            <Field label="Заметка: темп, пауза, техника">
               <TextInput
                 value={editing.ex.note ?? ''}
                 onChange={(e) => setEx({ note: e.target.value || undefined })}
-                placeholder="на каждую ногу, пауза 2 сек, почти до отказа…"
+                placeholder="спуск 3 сек, пауза 2 сек внизу, дропсет…"
               />
             </Field>
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-fg/[.08] px-4 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold">Суперсет со следующим упражнением</span>
+                <span className="block text-xs font-medium text-fg/45">Два упражнения подряд без отдыха, отдых — после второго</span>
+              </span>
+              <input type="checkbox" checked={!!editing.ex.supersetNext} onChange={(e) => setEx({ supersetNext: e.target.checked || undefined })} className="peer sr-only" />
+              <span className="relative h-7 w-12 shrink-0 rounded-full bg-fg/15 transition-colors peer-checked:bg-gold after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5" />
+            </label>
             <Field label="Отдых между подходами">
               <div className="grid grid-cols-3 gap-2">
                 {[

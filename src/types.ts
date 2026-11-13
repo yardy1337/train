@@ -11,6 +11,8 @@ export interface ProgramExercise {
   note?: string;
   /** Отдых между подходами, сек: 90 для базовых, 60 для изоляции. */
   rest: number;
+  /** Суперсет: выполняется подряд со следующим упражнением, отдых — только после следующего. */
+  supersetNext?: boolean;
 }
 
 export interface ProgramDay {
@@ -36,6 +38,7 @@ export interface WorkoutExercise {
   note?: string;
   rest: number;
   sets: SetEntry[];
+  supersetNext?: boolean;
 }
 
 export interface Workout {
@@ -47,6 +50,8 @@ export interface Workout {
   date: string; // YYYY-MM-DD
   startedAt: number;
   finishedAt?: number;
+  /** Тренировка недели разгрузки (вдвое меньше подходов). */
+  deload?: boolean;
   exercises: WorkoutExercise[];
 }
 

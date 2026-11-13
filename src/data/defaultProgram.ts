@@ -3,10 +3,10 @@ import type { ProgramDay, ProgramExercise } from '../types';
 const BASE = 90; // отдых для базовых упражнений
 const ISO = 60; // отдых для изоляции
 
-type Ex = [name: string, sets: number, repsMin: number, repsMax: number, rest: number, note?: string];
+type Ex = [name: string, sets: number, repsMin: number, repsMax: number, rest: number, note?: string, supersetNext?: boolean];
 
 function day(id: string, order: number, name: string, title: string, list: Ex[]): ProgramDay {
-  const exercises: ProgramExercise[] = list.map(([n, sets, repsMin, repsMax, rest, note], i) => ({
+  const exercises: ProgramExercise[] = list.map(([n, sets, repsMin, repsMax, rest, note, supersetNext], i) => ({
     id: `${id}-${i + 1}`,
     name: n,
     sets,
@@ -14,11 +14,13 @@ function day(id: string, order: number, name: string, title: string, list: Ex[])
     repsMax,
     rest,
     ...(note ? { note } : {}),
+    ...(supersetNext ? { supersetNext: true } : {}),
   }));
   return { id, order, name, title, exercises };
 }
 
-export function createDefaultProgram(): ProgramDay[] {
+/** Прежняя раскладка «Верх / Низ» (A–D) — на ней остаётся программа «Верх / Низ (3 дня)». */
+export function createLegacyUpperLower(): ProgramDay[] {
   return [
     day('A', 0, 'День A', 'Верх, сила', [
       ['Жим гантелей лёжа', 4, 6, 8, BASE],
@@ -53,6 +55,56 @@ export function createDefaultProgram(): ProgramDay[] {
       ['Зашагивания на скамью', 3, 8, 10, BASE, 'на каждую ногу'],
       ['Подъёмы на носки', 4, 12, 15, ISO],
       ['Подъём ног в висе', 3, 10, 15, ISO],
+    ]),
+  ];
+}
+
+// Отдых: первые два упражнения дня — 120 с, остальные — 75 с, после суперсета — 90 с.
+const HEAVY = 120;
+const REST = 75;
+const SS = 90;
+
+/**
+ * «Верх / Низ (гантели)»: 4 тренировки по кругу (Верх A → Низ A → Верх B → Низ B → …),
+ * 3 раза в неделю. Цикл 5 недель: 4 рабочие + разгрузка.
+ */
+export function createDefaultProgram(): ProgramDay[] {
+  return [
+    day('ul2-UA', 0, 'Верх A', 'Сила', [
+      ['Жим гантелей лёжа', 4, 6, 8, HEAVY],
+      ['Подтягивания', 4, 6, 8, HEAVY],
+      ['Жим гантелей на наклонной', 3, 8, 10, REST],
+      ['Тяга гантели в наклоне одной рукой', 3, 8, 10, REST, 'на каждую руку'],
+      ['Махи гантелями в стороны', 4, 12, 15, REST, 'последний подход: мио-повторы'],
+      ['Сгибания на бицепс на наклонной скамье', 3, 10, 12, 0, undefined, true],
+      ['Трицепс из-за головы на блоке', 3, 10, 12, SS],
+    ]),
+    day('ul2-LA', 1, 'Низ A', 'Ноги, задняя цепь', [
+      ['Болгарские выпады', 4, 8, 10, HEAVY, 'на каждую ногу, спуск 3 сек'],
+      ['Румынская тяга с гантелями', 4, 8, 10, HEAVY, 'спуск 3 сек'],
+      ['Гоблет-присед', 3, 10, 12, REST, 'пауза 2 сек внизу'],
+      ['Сгибания ног на полотенце', 3, 8, 12, REST],
+      ['Подъёмы на носки на одной ноге', 4, 12, 15, REST, 'пауза внизу'],
+      ['Подъём ног в висе', 3, 10, 15, REST],
+    ]),
+    day('ul2-UB', 2, 'Верх B', 'Объём', [
+      ['Жим гантелей на наклонной', 4, 8, 10, HEAVY],
+      ['Подтягивания обратным хватом', 3, 8, 10, HEAVY],
+      ['Тяга одной рукой на блоке', 3, 10, 12, REST, 'на каждую руку'],
+      ['Жим гантелей сидя', 3, 8, 10, REST],
+      ['Разводка гантелей лёжа', 3, 12, 15, 0, undefined, true],
+      ['Тяга к лицу на блоке', 3, 12, 15, SS],
+      ['Махи гантелями в стороны', 3, 15, 20, REST, 'последний подход: дропсет'],
+      ['Молотки', 3, 12, 12, 0, undefined, true],
+      ['Разгибания на трицепс на блоке вниз', 3, 12, 12, SS],
+    ]),
+    day('ul2-LB', 3, 'Низ B', 'Ноги, ягодицы, кор', [
+      ['Гоблет-присед', 4, 8, 10, HEAVY, 'спуск 3 сек'],
+      ['Румынская тяга с гантелями', 4, 10, 12, HEAVY, 'пауза 1 сек внизу'],
+      ['Зашагивания на скамью', 3, 10, 12, REST, 'на каждую ногу'],
+      ['Ягодичный мост с гантелью', 3, 12, 15, REST, 'пауза 2 сек вверху'],
+      ['Подъёмы на носки на одной ноге', 3, 15, 20, REST],
+      ['Планка', 3, 0, 0, REST, '45–60 сек'],
     ]),
   ];
 }

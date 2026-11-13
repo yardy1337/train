@@ -10,6 +10,7 @@ import { ACTIVE_PROGRAM_KEY, DEFAULT_PROGRAM_ID, allPrograms, findProgram, progr
 import { createCustomProgram, customDayStore, deleteCustomProgram, newDay, patchCustomProgram, useCustomPrograms } from '../../data/customPrograms';
 import { CustomProgramSheet } from './CustomProgramSheet';
 import { useAllowed } from '../../lib/features';
+import { getCycle, restartCycle, useCycle, type CycleInfo } from '../../lib/cycle';
 import { useAppConfig } from '../../lib/appConfig';
 import { TechniqueSheet, useHasTechnique } from './TechniqueSheet';
 import { shareImage, workoutCard } from '../../lib/shareCard';
@@ -60,7 +61,10 @@ export function WorkoutsPage() {
   useBackEntry(view.name === 'editor', () => view.name === 'editor' && setView({ name: 'program', id: view.id }));
 
   const start = async (day: ProgramDay) => {
-    await db.workouts.add(createWorkout(day, history));
+    // Неделя разгрузки цикла — вдвое меньше подходов.
+    const prog = days.some((d) => d.id === day.id) ? findProgram(activeProgramId) : programOfDay(day.id);
+    const c = await getCycle(prog);
+    await db.workouts.add(createWorkout(day, history, { deload: !!c?.deload }));
   };
 
   // Редактируемая программа (с вашими правками) хранится в базе, остальные — шаблоны каталога.
@@ -229,6 +233,7 @@ function CatalogHome({
   });
   const showAnn = !!ann?.on && !!(ann.title || ann.text) && dismissed !== ann.id;
   const mine = findProgram(activeProgramId);
+  const mineCycle = useCycle(mine);
   const nextId = nextDayId(days, history.filter((w) => days.some((d) => d.id === w.dayId)));
   const next = days.find((d) => d.id === nextId);
 
@@ -313,6 +318,12 @@ function CatalogHome({
                 <ChevronRight size={26} strokeWidth={2.6} className="opacity-70" />
               </div>
               <div className="mt-0.5 text-sm font-semibold text-white/75">{mine.tagline}</div>
+              {mineCycle && (
+                <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${mineCycle.deload ? 'bg-gold text-ink' : 'bg-white/12 text-white'}`}>
+                  <CalendarDays size={12} strokeWidth={2.6} />
+                  Неделя {mineCycle.week} из {mineCycle.total} · {mineCycle.deload ? 'разгрузка' : 'рабочая'}
+                </div>
+              )}
             </button>
             {next && (
               <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-white/12 p-3">
@@ -430,6 +441,7 @@ function ProgramPage({
   onStart: (d: ProgramDay) => void;
 }) {
   const [tech, setTech] = useState<string | null>(null);
+  const cycleInfo = useCycle(program);
   const hasTechnique = useHasTechnique();
   const own = history.filter((w) => days.some((d) => d.id === w.dayId));
   const nextId = nextDayId(days, own);
@@ -481,6 +493,7 @@ function ProgramPage({
             <Stat icon={<Dumbbell size={16} />} label="Уровень" value={program.level} />
           </div>
           <div className="text-xs font-semibold text-fg/45">Инвентарь: {program.equipment}</div>
+          {cycleInfo && <CycleBadge c={cycleInfo} programId={program.id} />}
           {isCurrent && (
             <div className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent-strong">
               <Check size={14} strokeWidth={3} /> Вы занимаетесь по этой программе
@@ -513,8 +526,11 @@ function ProgramPage({
                   </Button>
               </div>
               <ul className="mt-3 space-y-1.5 border-t border-fg/[.06] pt-3 text-sm">
-                {d.exercises.map((e) => (
-                  <li key={e.id} className="flex gap-2">
+                {d.exercises.map((e, ei) => (
+                  <li
+                    key={e.id}
+                    className={`flex gap-2 ${e.supersetNext || d.exercises[ei - 1]?.supersetNext ? '-ml-2.5 border-l-[3px] border-gold pl-2' : ''}`}
+                  >
                     <span className="flex-1 font-medium text-fg/80">
                       {hasTechnique(e.name) ? (
                         <button onClick={() => setTech(e.name)} className="inline text-left underline decoration-fg/20 decoration-dotted underline-offset-4">
@@ -525,7 +541,10 @@ function ProgramPage({
                       )}
                       {e.note && (e.repsMin || e.repsMax) ? <span className="text-fg/40"> · {e.note}</span> : null}
                     </span>
-                    <span className="font-semibold tabular-nums text-fg/40">{formatTarget(e.sets, e.repsMin, e.repsMax, e.note)}</span>
+                    <span className="shrink-0 text-right font-semibold tabular-nums text-fg/40">
+                      {formatTarget(cycleInfo?.deload ? Math.max(1, Math.ceil(e.sets / 2)) : e.sets, e.repsMin, e.repsMax, e.note)}
+                      {e.supersetNext && <span className="block text-[10px] font-extrabold text-gold-strong">суперсет ⇄</span>}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -550,3 +569,33 @@ function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: s
   );
 }
 
+
+/** Неделя цикла на странице программы. */
+function CycleBadge({ c, programId }: { c: CycleInfo; programId: string }) {
+  return (
+    <div className={`rounded-2xl p-3 ${c.deload ? 'bg-gold-soft' : 'bg-accent-soft'}`}>
+      <div className="flex items-center gap-2">
+        <CalendarDays size={16} className={c.deload ? 'text-gold-strong' : 'text-accent'} />
+        <span className="flex-1 text-sm font-extrabold">
+          Неделя {c.week} из {c.total} · {c.deload ? 'разгрузка' : 'рабочая'}
+        </span>
+        <button
+          className="text-[11px] font-bold text-fg/45 underline decoration-dotted underline-offset-2"
+          onClick={() => confirm('Начать цикл заново с этой недели?') && restartCycle(programId)}
+        >
+          с начала
+        </button>
+      </div>
+      <div className="mt-2 flex gap-1">
+        {Array.from({ length: c.total }, (_, i) => (
+          <span key={i} className={`h-1.5 flex-1 rounded-full ${i + 1 < c.week ? 'bg-accent' : i + 1 === c.week ? 'bg-gold' : 'bg-fg/10'} ${i + 1 === c.total ? 'opacity-70' : ''}`} />
+        ))}
+      </div>
+      <p className="mt-1.5 text-[11px] font-medium leading-snug text-fg/55">
+        {c.deload
+          ? 'Разгрузка: подходов вдвое меньше — мышцы и суставы восстанавливаются перед новым циклом.'
+          : `Недели 1–${c.total - 1} рабочие, ${c.total}-я — разгрузка с половиной подходов.`}
+      </p>
+    </div>
+  );
+}

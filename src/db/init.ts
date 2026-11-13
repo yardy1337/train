@@ -5,6 +5,8 @@ import type { Food } from '../types';
 
 /** Увеличивайте, когда меняется встроенная база продуктов. */
 const FOODS_SEED_VERSION = 2;
+/** Увеличивайте, когда меняется встроенная программа «Верх / Низ». */
+const PROGRAM_VERSION = 2;
 
 type Row = [name: string, kcal: number, protein: number, fat: number, carbs: number];
 
@@ -24,6 +26,18 @@ export async function initDb() {
   await db.transaction('rw', db.programDays, db.foods, db.settings, async () => {
     if ((await db.programDays.count()) === 0) {
       await db.programDays.bulkAdd(createDefaultProgram());
+      await db.settings.put({ key: 'programVersion', value: PROGRAM_VERSION });
+    }
+    // Новая «Верх / Низ»: заменяем дни программы на телефоне (история тренировок и веса остаются).
+    const pv = await db.settings.get('programVersion');
+    if (pv?.value !== PROGRAM_VERSION) {
+      const active = (await db.settings.get('activeProgram'))?.value ?? 'upper-lower';
+      if (active === 'upper-lower') {
+        await db.programDays.clear();
+        await db.programDays.bulkAdd(createDefaultProgram());
+        await db.settings.delete('cycleStart:upper-lower');
+      }
+      await db.settings.put({ key: 'programVersion', value: PROGRAM_VERSION });
     }
     const seeded = await db.settings.get('foodsSeedVersion');
     if (seeded?.value !== FOODS_SEED_VERSION) {

@@ -1,5 +1,5 @@
 import type { ProgramDay, ProgramExercise } from '../types';
-import { createDefaultProgram } from './defaultProgram';
+import { createDefaultProgram, createLegacyUpperLower } from './defaultProgram';
 
 /**
  * Каталог готовых программ. Чтобы добавить программу — допишите объект в PROGRAMS:
@@ -21,6 +21,8 @@ export interface CatalogProgram {
   look?: { icon: string; color: string };
   /** Программа, созданная самим пользователем на телефоне. */
   userMade?: boolean;
+  /** Цикл: столько рабочих недель, затем неделя разгрузки (вдвое меньше подходов). */
+  cycle?: { workWeeks: number };
 }
 
 const HEAVY = 120; // тяжёлая база
@@ -48,14 +50,15 @@ export const PROGRAMS: CatalogProgram[] = [
   {
     id: 'upper-lower',
     name: 'Верх / Низ (гантели)',
-    tagline: 'Гантели · набор массы · 4 тренировки в неделю',
+    tagline: 'Гантели · 4 тренировки по кругу · 3 раза в неделю',
     description:
-      'Сплит «верх — низ»: два дня на верх тела (сила и объём) и два на ноги с прессом. Каждая мышца получает нагрузку дважды в неделю. Прогрессия по двойному диапазону: добрали верх повторов во всех подходах — добавляйте вес.',
+      'Четыре тренировки идут по кругу: Верх A → Низ A → Верх B → Низ B → снова Верх A. Тренируйтесь 3 раза в неделю — следующая тренировка всегда та, что по кругу. Есть суперсеты (два упражнения подряд, отдых — после второго). Цикл 5 недель: 4 рабочие и неделя разгрузки с половиной подходов. Прогрессия по двойному диапазону: добрали верх повторов во всех подходах — добавляйте вес.',
     level: 'Средний',
-    daysPerWeek: 4,
+    daysPerWeek: 3,
     goal: 'Масса',
     equipment: 'Гантели, турник, блок',
     days: createDefaultProgram,
+    cycle: { workWeeks: 4 },
   },
   {
     id: 'upper-lower-3',
@@ -69,7 +72,7 @@ export const PROGRAMS: CatalogProgram[] = [
     equipment: 'Гантели, турник, блок',
     // Дни A, B, C обычной «Верх / Низ» со своими id (по id дня тренировка относится к программе).
     days: () =>
-      createDefaultProgram()
+      createLegacyUpperLower()
         .slice(0, 3)
         .map((d, i) => ({
           ...d,
