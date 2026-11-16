@@ -1,4 +1,4 @@
-import { BicepsFlexed, Calendar, Dumbbell, Flame, Heart, Mountain, PersonStanding, Target, Zap } from 'lucide-react';
+import { BicepsFlexed, Calendar, Dumbbell, Flame, Grab, HandFist, Heart, Mountain, PersonStanding, Target, Zap } from 'lucide-react';
 import { allPrograms } from './programs';
 import type { ComponentType } from 'react';
 
@@ -40,6 +40,8 @@ const LOOKS: Record<string, ProgramLook> = {
   'split-isma': { Icon: BicepsFlexed, color: '#d0543c' },
   'football-gym': { Icon: SoccerBall, color: '#1f9a55' },
   'power': { Icon: Zap, color: '#b4232c' },
+  'mma': { Icon: HandFist, color: '#c2410c' },
+  'wrestling': { Icon: Grab, color: '#475569' },
 };
 
 /** Значки и цвета на выбор для своей программы. */
