@@ -1,3 +1,4 @@
+import { PROGRAMS } from '../data/programs';
 import { db } from './db';
 import { createDefaultProgram } from '../data/defaultProgram';
 import foodsJson from '../data/foods.json';
@@ -38,6 +39,19 @@ export async function initDb() {
         await db.settings.delete('cycleStart:upper-lower');
       }
       await db.settings.put({ key: 'programVersion', value: PROGRAM_VERSION });
+    }
+    // Новая версия «Борьбы»: если её дни уже скопированы для правки — обновляем (история остаётся).
+    if ((await db.settings.get('wrestlingVersion'))?.value !== 2) {
+      const active = (await db.settings.get('activeProgram'))?.value;
+      const stored = await db.programDays.toArray();
+      if (active === 'wrestling' && stored.length && stored.every((d) => d.id.startsWith('wrest-'))) {
+        const p = PROGRAMS.find((x) => x.id === 'wrestling');
+        if (p) {
+          await db.programDays.clear();
+          await db.programDays.bulkAdd(p.days());
+        }
+      }
+      await db.settings.put({ key: 'wrestlingVersion', value: 2 });
     }
     // Дропсет из заметки → отдельная настройка упражнения (правки пользователя не трогаем).
     if (!(await db.settings.get('dropsetMigrated'))) {
